@@ -105,7 +105,10 @@
     splinevalue_exact_bspline(splines, i, x, nderiv=0) =
         nderiv ≥ size(splines,2) ? 0 : (splines[i,nderiv+1])(maybebig(x))
 
-    maybebig(x) = x
+    # Enlarge x for calculating exact B-splines:
+    # * for Integer/Rational: use at least 64-bit to avoid overflow in rational arithmetic
+    # * for floating-point: use BigFloat to minimize error
+    maybebig(x::Union{Integer,Rational}) = x*one(Int64)
     maybebig(x::AbstractFloat) = big(x)
 
     function test_splinevalue_zero(spline::Spline, x, isexact)

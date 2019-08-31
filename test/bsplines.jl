@@ -15,8 +15,11 @@ function bsplines_exact(funs, x, indices, ::AllDerivatives{N}) where N
     OffsetArray(arr, indices, 0:N-1)
 end
 
+# Enlarge x for calculating exact B-splines:
+# * for Integer/Rational: use at least 64-bit to avoid overflow in rational arithmetic
+# * for floating-point: use BigFloat to minimize error
+maybebig(x::Union{Integer,Rational}) = x*one(Int64)
 maybebig(x::AbstractFloat) = big(x)
-maybebig(x) = x
 
 @time @testset "bsplines" begin
     @testset "Return types" begin

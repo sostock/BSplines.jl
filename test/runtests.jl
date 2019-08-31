@@ -560,7 +560,7 @@ end
     @test_throws DimensionMismatch knotaverages!(zeros(6), BSplineBasis(3, 0//1:5//1), indices=:)
     @test_throws DimensionMismatch knotaverages!(zeros(7), BSplineBasis(3, 0//1:5//1), indices=2:7)
     @test begin
-        dest = Vector{Float64}(undef, 8)
+        dest = Vector{Float32}(undef, 8)
         knotaverages!(dest, BSplineBasis(4, 0:1:5))
         dest ≈ [0, 1/3, 1, 2, 3, 4, 14/3, 5]
     end
@@ -575,7 +575,7 @@ end
         dest == [1//3, 1, 2, 3, 4]
     end
     @test begin
-        dest = Vector{Float64}(undef, 9)
+        dest = Vector{Float32}(undef, 9)
         knotaverages!(dest, BSplineBasis(5, [-5.0, -3.5, -2.2, 1.0, 2.0, 3.6]))
         dest ≈ [-5.0, -4.625, -3.925, -2.425, -0.675, 1.1, 2.55, 3.2, 3.6]
     end
@@ -585,7 +585,7 @@ end
         dest ≈ [-5.0, -4.625, -3.925, -2.425, -0.675, 1.1, 2.55, 3.2, 3.6]
     end
     @test begin
-        dest = Vector{Rational{Int}}(undef, 8)
+        dest = Vector{BigFloat}(undef, 8)
         knotaverages!(dest, BSplineBasis(5, [-5.0, -3.5, -2.2, 1.0, 2.0, 3.6]), indices=1:8)
         dest ≈ [-5.0, -4.625, -3.925, -2.425, -0.675, 1.1, 2.55, 3.2]
     end
