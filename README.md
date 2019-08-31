@@ -1,5 +1,10 @@
 # [WIP] BSplines
 
+[![Build Status](https://travis-ci.com/sostock/BSplines.jl.svg?branch=master)](https://travis-ci.com/sostock/BSplines.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/ruh7o1yalohqawbd/branch/master?svg=true)](https://ci.appveyor.com/project/sostock/bsplines-jl/branch/master)
+[![codecov](https://codecov.io/gh/sostock/BSplines.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/sostock/BSplines.jl)
+[![Coverage Status](https://coveralls.io/repos/github/sostock/BSplines.jl/badge.svg?branch=master)](https://coveralls.io/github/sostock/BSplines.jl?branch=master)
+
 This package provides data types and functions for working with [B-splines](https://en.wikipedia.org/wiki/B-spline).
 It is currently **work in progress**.
 
