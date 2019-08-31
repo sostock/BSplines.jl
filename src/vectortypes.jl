@@ -22,7 +22,7 @@ the front and the last element `back` times at the back. (not exported)
 
 # Examples 
 
-```jldoctest
+```jldoctest; setup = :(using BSplines: KnotVector)
 julia> KnotVector(0:4, 2)
 9-element KnotVector{Int64,UnitRange{Int64}}:
  0
@@ -98,14 +98,14 @@ other elements are equal to `0`. The elements are of type `T`. (not exported)
 
 # Examples
 
-```jldoctest
+```jldoctest; setup = :(using BSplines: StandardBasisVector)
 julia> StandardBasisVector(5, 3)
 5-element StandardBasisVector{Bool}:
- false
- false
-  true
- false
- false
+ 0
+ 0
+ 1
+ 0
+ 0
 
 julia> StandardBasisVector(Float64, 6, 2)
 6-element StandardBasisVector{Float64}:

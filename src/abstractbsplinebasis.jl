@@ -416,7 +416,7 @@ If the index of the relevant interval is already known, it can be supplied with 
 
 ```jldoctest
 julia> bsplines(BSplineBasis(4, 0:5), 2.4)
-OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667 
  0.41466666666666663
@@ -425,7 +425,7 @@ OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
 julia> bsplines(BSplineBasis(4, 0:5), 6) # returns nothing
 
 julia> bsplines(BSplineBasis(3, 0:5), 17//5, leftknot=6)
-OffsetArray(::Array{Rational{Int64},1}, 4:6) with eltype Rational{Int64} with indices 4:6:
+3-element OffsetArray(::Array{Rational{Int64},1}, 4:6) with eltype Rational{Int64} with indices 4:6:
   9//50
  37//50
   2//25
@@ -449,7 +449,7 @@ If the index of the relevant interval is already known, it can be supplied with 
 
 ```jldoctest
 julia> bsplines(BSplineBasis(3, 0:5), 2.4, Derivative(1))
-OffsetArray(::Array{Float64,1}, 3:5) with eltype Float64 with indices 3:5:
+3-element OffsetArray(::Array{Float64,1}, 3:5) with eltype Float64 with indices 3:5:
  -0.6000000000000001 
   0.20000000000000018
   0.3999999999999999 
@@ -457,7 +457,7 @@ OffsetArray(::Array{Float64,1}, 3:5) with eltype Float64 with indices 3:5:
 julia> bsplines(BSplineBasis(3, 0:5), 6, Derivative(1)) # returns nothing
 
 julia> bsplines(BSplineBasis(4, 0:5), 17//5, Derivative(2), leftknot=7)
-OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
+4-element OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
   3//5
  -4//5
  -2//5
@@ -483,15 +483,15 @@ If the index of the relevant interval is already known, it can be supplied with 
 
 ```jldoctest
 julia> bsplines(BSplineBasis(3, 0:5), 2.4, AllDerivatives(3))
-OffsetArray(::Array{Float64,2}, 3:5, 0:2) with eltype Float64 with indices 3:5×0:2:
+3×3 OffsetArray(::Array{Float64,2}, 3:5, 0:2) with eltype Float64 with indices 3:5×0:2:
  0.18  -0.6   1.0
  0.74   0.2  -2.0
  0.08   0.4   1.0
 
-julia> bsplines(BSplineBasis(3, 0:5), 2.4, AllDerivatives(3)) # returns nothing
+julia> bsplines(BSplineBasis(3, 0:5), 6.0, AllDerivatives(3)) # returns nothing
 
 julia> bsplines(BSplineBasis(4, 0:5), 17//5, AllDerivatives(4), leftknot=7)
-OffsetArray(::Array{Rational{Int64},2}, 4:7, 0:3) with eltype Rational{Int64} with indices 4:7×0:3:
+4×4 OffsetArray(::Array{Rational{Int64},2}, 4:7, 0:3) with eltype Rational{Int64} with indices 4:7×0:3:
    9//250   -9//50   3//5  -1//1
  202//375  -14//25  -4//5   3//1
  307//750   31//50  -2//5  -7//2
