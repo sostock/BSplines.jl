@@ -36,6 +36,9 @@ function Base.show(io::IO, ::MIME"text/plain", s::Spline)
     print(io, " coeffs: ", coeffs(s))
 end
 
+# Splines act as scalars for broadcasting
+Base.Broadcast.broadcastable(s::Spline) = Ref(s)
+
 (s::Spline)(args...; kwargs...) = splinevalue(s, args...; kwargs...)
 
 check_intervalindex(::Type{Bool}, s::Spline, x, index) =

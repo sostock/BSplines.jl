@@ -362,6 +362,11 @@ end
             @test (s1 == s2) == (hash(s1) == hash(s2))
         end
     end
+
+    @testset "Broadcasting" begin
+        # Splines act as scalars for broadcasting
+        @test size(Spline(BSplineBasis(3, 0:5), 1:7) .== BSplineBasis(3, 0:5)[1]) == ()
+    end
 end
 
 @testset "Derivatives" begin
@@ -374,6 +379,8 @@ end
     @test Derivative(UInt(4)) === Derivative{4}()
     @test_throws DomainError Derivative(-1)
     @test_throws DomainError Derivative(Int8(-2))
+    @test Derivative(2) == Derivative(2)
+    @test Derivative(2) != Derivative(3)
     # AllDerivatives
     @test AllDerivatives{2}() isa AllDerivatives
     @test_throws DomainError AllDerivatives{0}()
@@ -386,6 +393,11 @@ end
     @test_throws DomainError AllDerivatives(-1)
     @test_throws DomainError AllDerivatives(Int8(-2))
     @test_throws DomainError AllDerivatives(UInt(0))
+    @test AllDerivatives(2) == AllDerivatives(2)
+    @test AllDerivatives(2) != AllDerivatives(3)
+    # Derivative/AllDerivatives act as scalars for broadcasting
+    @test size(Derivative(1) .== Derivative(1)) == ()
+    @test size(AllDerivatives(4) .== AllDerivatives(4)) == ()
 end
 
 include("bases.jl")

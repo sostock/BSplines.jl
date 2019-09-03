@@ -51,3 +51,7 @@ const NoDerivative = Derivative{0}
 An alias for `Union{Derivative{0}, AllDerivatives{1}}`. (not exported)
 """
 const NoDerivUnion = Union{Derivative{0}, AllDerivatives{1}}
+
+# AllDerivatives/Derivative act as scalars for broadcasting
+Base.Broadcast.broadcastable(x::AllDerivatives) = Ref(x)
+Base.Broadcast.broadcastable(x::Derivative) = Ref(x)
