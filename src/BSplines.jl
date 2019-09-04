@@ -37,6 +37,7 @@ include("derivatives.jl")
 include("abstractbsplinebasis.jl")
 include("spline.jl")
 include("bsplinebasis.jl")
+include("plotting.jl")
 
 bspline_returntype(basis::AbstractBSplineBasis, x::Number) = bspline_returntype(basis, typeof(x))
 bspline_returntype(basis::AbstractBSplineBasis, types::Type...) =
