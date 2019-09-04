@@ -319,6 +319,11 @@ end
         @test order(BSplineBasis(5, 0:5)[1]) == 5
         @test order(BSplineBasis(3, 0:1//2:10)[2]) == 3
     end
+
+    @testset "Printing" begin
+        @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{UnitRange{$Int}}"
+        @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{Array{Float64,1}}"
+    end
 end
 
 @testset "Spline" begin
