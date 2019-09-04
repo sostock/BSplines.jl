@@ -409,6 +409,42 @@ include("bases.jl")
 include("bsplines.jl")
 include("splinevalue.jl")
 
+@testset "SplineFunctionWrapper" begin
+    function test_splinefunctionwrapper(spline)
+        a,b = support(spline)
+        f  = Function(spline)
+        f⁰ = Function(spline, Derivative(0))
+        f¹ = Function(spline, Derivative(1))
+        f² = Function(spline, Derivative(2))
+        g  = Function(spline, false)
+        g⁰ = Function(spline, Derivative(0), false)
+        g¹ = Function(spline, Derivative(1), false)
+        g² = Function(spline, Derivative(2), false)
+        xs = range(a, stop=b, length=10)
+        @test all(f.(xs) .== spline.(xs))
+        @test all(f⁰.(xs) .== spline.(xs))
+        @test all(f¹.(xs) .== spline.(xs, Derivative(1)))
+        @test all(f².(xs) .== spline.(xs, Derivative(2)))
+        @test all(g.(xs) .== spline.(xs))
+        @test all(g⁰.(xs) .== spline.(xs))
+        @test all(g¹.(xs) .== spline.(xs, Derivative(1)))
+        @test all(g².(xs) .== spline.(xs, Derivative(2)))
+        for x = (a-1, b+1)
+            for fun = (f, f⁰, f¹, f²)
+                @test isnan(fun(x))
+            end
+            for fun = (g, g⁰, g¹, g²)
+                @test iszero(fun(x))
+            end
+        end
+    end
+    for spline = [BSpline(BSplineBasis(4, 0:2:20), 8),
+                  Spline(BSplineBasis(3, 0//1:5//1), 1:7),
+                  Spline(BSplineBasis(5, [0:0.1:1;]), ones(14))]
+        test_splinefunctionwrapper(spline)
+    end
+end
+
 @testset "approximate" begin
     basis = BSplineBasis(3, 0:5)
     knotavgs = [0.0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.0]
