@@ -256,11 +256,6 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, indices::A
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        # bindices = bsplines!(workspace, basis, x, leftknot=leftknot)
-        # boffset = first(bindices) - 1
-        # for bindex = bindices ∩ indices
-        #     dest[xindex, bindex-indicesoffset] = workspace[bindex-boffset]
-        # end
         boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
         bindices = boffset .+ axes(workspace, 1)
         for bindex = bindices ∩ indices
@@ -275,11 +270,6 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, ::Colon)
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        # bindices = bsplines!(workspace, basis, x, leftknot=leftknot)
-        # boffset = first(bindices) - 1
-        # for bindex = bindices
-        #     dest[xindex, bindex] = workspace[bindex-boffset]
-        # end
         boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
         for index = axes(workspace, 1)
             dest[xindex, index+boffset] = workspace[index]
