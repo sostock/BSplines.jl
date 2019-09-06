@@ -12,7 +12,6 @@ export
     BSplineBasis,
     Derivative,
     Spline,
-    StaticBSplineBasis,
 
     # Functions
     approximate,
