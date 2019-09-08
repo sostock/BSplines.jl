@@ -66,7 +66,7 @@ order(s::Spline) = order(basis(s))
 Type for a B-spline from a B-spline basis of type `B`. `BSpline`s can be obtained by
 indexing into a B-spline basis.
 """
-const BSpline = Spline{T, StandardBasisVector{Bool}} where T<:AbstractBSplineBasis
+const BSpline = Spline{B, StandardBasisVector{Bool}} where B<:AbstractBSplineBasis
 
 @propagate_inbounds BSpline{B}(basis, index::Integer) where B<:AbstractBSplineBasis =
     BSpline{B}(basis, StandardBasisVector(length(basis), index))
@@ -75,6 +75,19 @@ const BSpline = Spline{T, StandardBasisVector{Bool}} where T<:AbstractBSplineBas
     BSpline(basis::AbstractBSplineBasis, index)
 
 Return the `index`-th B-spline of `basis`.
+
+# Example
+
+```jldoctest
+julia> basis = BSplineBasis(5, 1:10);
+
+julia> BSpline(basis, 3)
+BSpline{BSplineBasis{UnitRange{Int64}}}:
+ basis: 13-element BSplineBasis{UnitRange{Int64}}:
+  order: 5
+  breakpoints: 1:10
+ index: 3 (knots: [1, 1, 1, 2, 3, 4])
+```
 """
 @propagate_inbounds BSpline(basis::B, index::Integer) where B<:AbstractBSplineBasis =
     BSpline{B}(basis, index)
