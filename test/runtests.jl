@@ -437,20 +437,22 @@ end
                 spl = Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12])
                 lmul!(5//2, spl) === spl && spl == Spline(BSplineBasis(4, [1:10;]), [(5//2)*sqrt(i) for i=1:12])
             end
-            # LinearAlgebra.ldiv!
-            @test begin
-                spl = Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//1,0,0])
-                ldiv!(10, spl) === spl && spl == Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//10,0,0])
-            end
             # LinearAlgebra.rmul!
             @test begin
                 spl = Spline(BSplineBasis(3, 0:5), [0,0,0,0,1,0,0])
                 rmul!(spl, 2) === spl && spl == Spline(BSplineBasis(3, 0:5), [0,0,0,0,2,0,0])
             end
-            # LinearAlgebra.rdiv!
-            @test begin
-                spl = Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12])
-                rdiv!(spl, 3.0) === spl && spl ==  Spline(BSplineBasis(4, [1:10;]), [sqrt(i)/3.0 for i=1:12])
+            @static if VERSION ≥ v"1.2"
+                # LinearAlgebra.ldiv!
+                @test begin
+                    spl = Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//1,0,0])
+                    ldiv!(10, spl) === spl && spl == Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//10,0,0])
+                end
+                # LinearAlgebra.rdiv!
+                @test begin
+                    spl = Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12])
+                    rdiv!(spl, 3.0) === spl && spl ==  Spline(BSplineBasis(4, [1:10;]), [sqrt(i)/3.0 for i=1:12])
+                end
             end
         end
     end

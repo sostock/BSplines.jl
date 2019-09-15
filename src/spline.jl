@@ -54,10 +54,12 @@ Base.:*(x::Real, y::Spline) = Spline(basis(y), x*coeffs(y))
 Base.:\(x::Real, y::Spline) = Spline(basis(y), x\coeffs(y))
 
 LinearAlgebra.lmul!(x::Real, y::Spline) = (lmul!(x, coeffs(y)); y)
-LinearAlgebra.ldiv!(x::Real, y::Spline) = (ldiv!(x, coeffs(y)); y)
-
 LinearAlgebra.rmul!(x::Spline, y::Real) = (rmul!(coeffs(x), y); x)
-LinearAlgebra.rdiv!(x::Spline, y::Real) = (rdiv!(coeffs(x), y); x)
+
+@static if VERSION ≥ v"1.2"
+    LinearAlgebra.ldiv!(x::Real, y::Spline) = (ldiv!(x, coeffs(y)); y)
+    LinearAlgebra.rdiv!(x::Spline, y::Real) = (rdiv!(coeffs(x), y); x)
+end
 
 (s::Spline)(args...; kwargs...) = splinevalue(s, args...; kwargs...)
 
