@@ -39,6 +39,26 @@ end
 # Splines act as scalars for broadcasting
 Base.Broadcast.broadcastable(s::Spline) = Ref(s)
 
+for op in (:+, :-)
+    @eval Base.$op(x::Spline) = Spline(basis(x), $op(coeffs(x)))
+    @eval function Base.$op(x::Spline, y::Spline)
+        basis(x) == basis(y) || throw(ArgumentError("splines must be defined on the same basis."))
+        Spline(basis(x), $op(coeffs(x), coeffs(y)))
+    end
+end
+
+Base.:*(x::Spline, y::Real) = Spline(basis(x), coeffs(x)*y)
+Base.:/(x::Spline, y::Real) = Spline(basis(x), coeffs(x)/y)
+
+Base.:*(x::Real, y::Spline) = Spline(basis(y), x*coeffs(y))
+Base.:\(x::Real, y::Spline) = Spline(basis(y), x\coeffs(y))
+
+LinearAlgebra.lmul!(x::Real, y::Spline) = (lmul!(x, coeffs(y)); y)
+LinearAlgebra.ldiv!(x::Real, y::Spline) = (ldiv!(x, coeffs(y)); y)
+
+LinearAlgebra.rmul!(x::Spline, y::Real) = (rmul!(coeffs(x), y); x)
+LinearAlgebra.rdiv!(x::Spline, y::Real) = (rdiv!(coeffs(x), y); x)
+
 (s::Spline)(args...; kwargs...) = splinevalue(s, args...; kwargs...)
 
 check_intervalindex(::Type{Bool}, s::Spline, x, index) =

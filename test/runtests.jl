@@ -1,6 +1,7 @@
 using Test
 using BSplines
 using BSplines: AbstractBSplineBasis, KnotVector, StandardBasisVector, check_intervalindex
+using LinearAlgebra: ldiv!, lmul!, rdiv!, rmul!
 using OffsetArrays: OffsetArray
 
 include("knotvector.jl")
@@ -371,6 +372,87 @@ end
     @testset "Broadcasting" begin
         # Splines act as scalars for broadcasting
         @test size(Spline(BSplineBasis(3, 0:5), 1:7) .== BSplineBasis(3, 0:5)[1]) == ()
+    end
+
+    @testset "Arithmetic" begin
+        @testset "Unary +/-" begin
+            @test +(BSplineBasis(3, 0:5)[4]) == Spline(BSplineBasis(3, 0:5), [0,0,0,1,0,0,0])
+            @test +(Spline(BSplineBasis(4, [1:10;]), 1:12)) == Spline(BSplineBasis(4, 1:10), 1:12)
+            @test +(Spline(BSplineBasis(4, [1:10;]), [1:12;])) == Spline(BSplineBasis(4, 1:10), 1:12)
+            @test -(BSplineBasis(3, 0:5)[4]) == Spline(BSplineBasis(3, 0:5), [0,0,0,-1,0,0,0])
+            @test -(Spline(BSplineBasis(4, [1:10;]), 1:12)) == Spline(BSplineBasis(4, 1:10), -1:-1:-12)
+            @test -(Spline(BSplineBasis(4, [1:10;]), [1:12;])) == Spline(BSplineBasis(4, 1:10), -1:-1:-12)
+        end
+
+        @testset "Binary +/-" begin
+            # Addition
+            @test (BSplineBasis(3, 0:5)[1]) + (BSplineBasis(3, 0:5)[4]) == Spline(BSplineBasis(3, 0:5), [1,0,0,1,0,0,0])
+            @test (BSplineBasis(3, 0:5)[2]) + (BSplineBasis(3, [0:5;])[2]) == Spline(BSplineBasis(3, 0:5), [0,2,0,0,0,0,0])
+            @test (BSplineBasis(4, [1:10;])[1]) + Spline(BSplineBasis(4, 1:10), ones(12)) ==
+                Spline(BSplineBasis(4, 1:10), [2,1,1,1,1,1,1,1,1,1,1,1])
+            @test Spline(BSplineBasis(4, [1:10;]), -11:0) + (BSplineBasis(4, [1:10;])[12]) ==
+                Spline(BSplineBasis(4, 1:10), [-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1])
+            @test Spline(BSplineBasis(5, -6:2:6), sqrt.(1:10)) + Spline(BSplineBasis(5, -6:2:6), log.(1:10)) ==
+                Spline(BSplineBasis(5, -6:2:6), [sqrt(i)+log(i) for i=1:10])
+            @test Spline(BSplineBasis(5, -3:1:3), 1.0:10.0) + Spline(BSplineBasis(5, -3:3), -10.0:-1.0) ==
+                Spline(BSplineBasis(5, -3:3), -9.0:2.0:9.0)
+            # Subtraction
+            @test (BSplineBasis(3, 0:5)[1]) - (BSplineBasis(3, 0:5)[4]) == Spline(BSplineBasis(3, 0:5), [1,0,0,-1,0,0,0])
+            @test (BSplineBasis(3, 0:5)[2]) - (BSplineBasis(3, [0:5;])[2]) == Spline(BSplineBasis(3, 0:5), zeros(7))
+            @test (BSplineBasis(4, [1:10;])[1]) - Spline(BSplineBasis(4, 1:10), ones(12)) ==
+                Spline(BSplineBasis(4, 1:10), [0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1])
+            @test Spline(BSplineBasis(4, [1:10;]), -11:0) - (BSplineBasis(4, [1:10;])[12]) ==
+                Spline(BSplineBasis(4, 1:10), [-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,-1])
+            @test Spline(BSplineBasis(5, -6:2:6), sqrt.(1:10)) - Spline(BSplineBasis(5, -6:2:6), log.(1:10)) ==
+                Spline(BSplineBasis(5, -6:2:6), [sqrt(i)-log(i) for i=1:10])
+            @test Spline(BSplineBasis(5, -3:1:3), 1.0:10.0) - Spline(BSplineBasis(5, -3:3), -10.0:-1.0) ==
+                Spline(BSplineBasis(5, -3:3), fill(11.0, 10))
+            # Different bases
+            @test_throws ArgumentError (BSplineBasis(3, 0:5)[2]) + (BSplineBasis(4, 0:4)[2])
+            @test_throws ArgumentError (BSplineBasis(3, 0:5)[2]) + Spline(BSplineBasis(4, 0:5), ones(8))
+            @test_throws ArgumentError Spline(BSplineBasis(3, 0:5), zeros(7)) + Spline(BSplineBasis(4, 1:10), ones(12))
+            @test_throws ArgumentError (BSplineBasis(3, 0:5)[2]) - (BSplineBasis(4, 0:4)[2])
+            @test_throws ArgumentError (BSplineBasis(3, 0:5)[2]) - Spline(BSplineBasis(4, 0:5), ones(8))
+            @test_throws ArgumentError Spline(BSplineBasis(3, 0:5), zeros(7)) - Spline(BSplineBasis(4, 1:10), ones(12))
+        end
+
+        @testset "Multiplication/division" begin
+            # Base.*
+            @test (BSplineBasis(3, 0:5)[5]) * 2 == Spline(BSplineBasis(3, 0:5), [0,0,0,0,2,0,0])
+            @test Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12]) * 0.1 ==
+                Spline(BSplineBasis(4, [1:10;]), [sqrt(i)*0.1 for i=1:12])
+            @test 3.0 * (BSplineBasis(3, 0:5)[5])  == Spline(BSplineBasis(3, 0:5), [0,0,0,0,3,0,0])
+            @test (5//2) * Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12]) ==
+                Spline(BSplineBasis(4, [1:10;]), [(5//2)*sqrt(i) for i=1:12])
+            # Base./
+            @test (BSplineBasis(3, 0:5)[5]) / 2 == Spline(BSplineBasis(3, 0:5), [0,0,0,0,.5,0,0])
+            @test Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12]) / 3.0 ==
+                Spline(BSplineBasis(4, [1:10;]), [sqrt(i)/3.0 for i=1:12])
+            # Base.\
+            @test 10 \ (BSplineBasis(3, 0:5)[5])  == Spline(BSplineBasis(3, 0:5), [0,0,0,0,1/10,0,0])
+            @test (5//2) \ Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12]) ==
+                Spline(BSplineBasis(4, [1:10;]), [(5//2)\sqrt(i) for i=1:12])
+            # LinearAlgebra.lmul!
+            @test begin
+                spl = Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12])
+                lmul!(5//2, spl) === spl && spl == Spline(BSplineBasis(4, [1:10;]), [(5//2)*sqrt(i) for i=1:12])
+            end
+            # LinearAlgebra.ldiv!
+            @test begin
+                spl = Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//1,0,0])
+                ldiv!(10, spl) === spl && spl == Spline(BSplineBasis(3, 0:5), [0,0,0,0,1//10,0,0])
+            end
+            # LinearAlgebra.rmul!
+            @test begin
+                spl = Spline(BSplineBasis(3, 0:5), [0,0,0,0,1,0,0])
+                rmul!(spl, 2) === spl && spl == Spline(BSplineBasis(3, 0:5), [0,0,0,0,2,0,0])
+            end
+            # LinearAlgebra.rdiv!
+            @test begin
+                spl = Spline(BSplineBasis(4, [1:10;]), [sqrt(i) for i=1:12])
+                rdiv!(spl, 3.0) === spl && spl ==  Spline(BSplineBasis(4, [1:10;]), [sqrt(i)/3.0 for i=1:12])
+            end
+        end
     end
 end
 

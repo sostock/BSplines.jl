@@ -1,7 +1,9 @@
 module BSplines
 
+import LinearAlgebra
+
 using Base: @propagate_inbounds, has_offset_axes
-using LinearAlgebra: I
+using LinearAlgebra: I, ldiv!, lmul!, rdiv!, rmul!
 using OffsetArrays: OffsetArray
 
 export
