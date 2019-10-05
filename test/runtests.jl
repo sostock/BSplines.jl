@@ -1,6 +1,6 @@
 using Test
 using BSplines
-using BSplines: AbstractBSplineBasis, KnotVector, StandardBasisVector, check_intervalindex
+using BSplines: KnotVector, StandardBasisVector, check_intervalindex
 using LinearAlgebra: ldiv!, lmul!, rdiv!, rmul!
 using OffsetArrays: OffsetArray
 
