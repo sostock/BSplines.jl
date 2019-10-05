@@ -92,8 +92,8 @@ _joinsupport((xmin, xmax), (ymin, ymax)) = (min(xmin, ymin), max(xmax, ymax))
 @recipe f(s::Vector{S}, xmin::Number, xmax::Number) where {S<:Spline} =
     (Function.(s, true), xmin, xmax)
 
-# AbstractBSplineBasis
-@recipe function f(basis::AbstractBSplineBasis, pointsperspline::Integer=100)
+# BSplineBasis
+@recipe function f(basis::BSplineBasis, pointsperspline::Integer=100)
     label --> permutedims(eachindex(basis))
     xs = Matrix{Float64}(undef, pointsperspline, length(basis))
     ys = similar(xs)

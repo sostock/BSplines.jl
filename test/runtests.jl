@@ -8,7 +8,7 @@ include("knotvector.jl")
 include("standardbasisvector.jl")
 
 @testset "intervalindex" begin
-    function test_intervalindex(basis::AbstractBSplineBasis, x, leftknot)
+    function test_intervalindex(basis::BSplineBasis, x, leftknot)
         @test intervalindex(basis, x) === leftknot
         for start = eachindex(knots(basis))
             @test intervalindex(basis, x, start) === leftknot
@@ -626,7 +626,7 @@ end
 end
 
 @testset "averagebasis" begin
-    ≈ₜₑₛₜ(x::AbstractBSplineBasis, y::AbstractBSplineBasis; kwargs...) =
+    ≈ₜₑₛₜ(x::BSplineBasis, y::BSplineBasis; kwargs...) =
         order(x) == order(y) && isapprox(breakpoints(x), breakpoints(y); kwargs...)
 
     @test averagebasis(3, [0.0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.0]) ≈ₜₑₛₜ BSplineBasis(3, 0:5)

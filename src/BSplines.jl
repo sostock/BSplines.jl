@@ -8,7 +8,6 @@ using OffsetArrays: OffsetArray
 
 export
     # Types
-    AbstractBSplineBasis,
     AllDerivatives,
     BSpline,
     BSplineBasis,
@@ -35,13 +34,12 @@ export
 
 include("vectortypes.jl")
 include("derivatives.jl")
-include("abstractbsplinebasis.jl")
-include("spline.jl")
 include("bsplinebasis.jl")
+include("spline.jl")
 include("plotting.jl")
 
-bspline_returntype(basis::AbstractBSplineBasis, x::Number) = bspline_returntype(basis, typeof(x))
-bspline_returntype(basis::AbstractBSplineBasis, types::Type...) =
+bspline_returntype(basis::BSplineBasis, x::Number) = bspline_returntype(basis, typeof(x))
+bspline_returntype(basis::BSplineBasis, types::Type...) =
     bspline_returntype(eltype(breakpoints(basis)), types...)
 
 bspline_returntype(spline::Spline, x::Number) = bspline_returntype(spline, typeof(x))
@@ -55,7 +53,7 @@ end
 
 
 """
-    approximate(f, basis::AbstractBSplineBasis; indices=eachindex(basis)) -> Spline
+    approximate(f, basis::BSplineBasis; indices=eachindex(basis)) -> Spline
 
 Approximate the function `f` in the B-spline basis `basis`. If `indices` is supplied, only
 the basis functions at the given indices of `basis` are used.
@@ -65,13 +63,13 @@ The approximation is calculated by interpolating samples of `f` at the
 
 See also: [`interpolate`](@ref)
 """
-function approximate(f, basis::AbstractBSplineBasis; indices::Union{AbstractUnitRange,Colon}=Colon())
+function approximate(f, basis::BSplineBasis; indices::Union{AbstractUnitRange,Colon}=Colon())
     xvalues = knotaverages(basis, indices=indices)
     interpolate(basis, xvalues, f.(xvalues); indices=indices)
 end
 
 """
-    interpolate(basis::AbstractBSplineBasis, xvalues, yvalues; indices=eachindex(basis)) -> Spline
+    interpolate(basis::BSplineBasis, xvalues, yvalues; indices=eachindex(basis)) -> Spline
 
 Interpolate the data given by `xvalues` and `yvalues` in the B-spline basis `basis`. If
 `indices` is supplied, only the basis functions at the given indices of `basis` are used.
@@ -81,7 +79,7 @@ The spline interpolation is calculated by creating the matrix
 
 See also: [`approximate`](@ref)
 """
-function interpolate(basis::AbstractBSplineBasis, xvalues::AbstractVector, yvalues::AbstractVector;
+function interpolate(basis::BSplineBasis, xvalues::AbstractVector, yvalues::AbstractVector;
                      indices::Union{AbstractUnitRange,Colon}=Colon())
     if !checkbounds(Bool, basis, indices)
         throw(ArgumentError("indices must be valid indices for basis."))
@@ -103,7 +101,7 @@ end
 _interpolate(basis, basismatrix, yvalues, ::Colon) = Spline(basis, basismatrix\yvalues)
 
 """
-    knotaverages(basis::AbstractBSplineBasis; indices=eachindex(basis))
+    knotaverages(basis::BSplineBasis; indices=eachindex(basis))
 
 Return the knot averages `τ[i] = mean(knots[i+1:i+order-1])` for `i ∈ indices` and the
 knots and order of `basis`. The knot averages are recommended in [^deBoor1978] (p. 214) as
@@ -136,7 +134,7 @@ julia> knotaverages(BSplineBasis(4, [1, 3//2, 5//2, 4]), indices=2:6)
  4//1
 ```
 """
-function knotaverages(basis::AbstractBSplineBasis; indices=Colon())
+function knotaverages(basis::BSplineBasis; indices=Colon())
     if !checkbounds(Bool, basis, indices)
         throw(ArgumentError("invalid indices for basis: $indices"))
     end
@@ -146,7 +144,7 @@ function knotaverages(basis::AbstractBSplineBasis; indices=Colon())
 end
 
 """
-    knotaverages!(dest, basis::AbstractBSplineBasis; indices=eachindex(basis))
+    knotaverages!(dest, basis::BSplineBasis; indices=eachindex(basis))
 
 Calculate the knot averages `τ[i] = mean(knots[i+1:i+order-1])` for `i ∈ indices` and the
 knots and order of `basis` and store the result in `dest`. The knot averages are recommended
@@ -183,7 +181,7 @@ julia> knotaverages!(dest, BSplineBasis(3, 0:5), indices=2:6)
  9//2
 ```
 """
-function knotaverages!(dest, basis::AbstractBSplineBasis; indices=Colon())
+function knotaverages!(dest, basis::BSplineBasis; indices=Colon())
     has_offset_axes(dest) && throw(ArgumentError("destination vector may not have offset axes."))
     if !checkbounds(Bool, basis, indices)
         throw(ArgumentError("invalid indices for basis: $indices"))

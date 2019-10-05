@@ -147,7 +147,7 @@
         end
     end
 
-    function test_splinevalue_bsplines(basis::AbstractBSplineBasis, basis_exact, xtype, isexact)
+    function test_splinevalue_bsplines(basis::BSplineBasis, basis_exact, xtype, isexact)
         for (i, bspline) = enumerate(basis)
             a, b = support(bspline)
             for x = xrange(xtype, a, b, 10)

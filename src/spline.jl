@@ -1,13 +1,13 @@
 """
-    Spline{B<:AbstractBSplineBasis, C<:AbstractVector{<:Real}}
+    Spline{B<:BSplineBasis, C<:AbstractVector{<:Real}}
 
 Type for a spline based on a B-spline basis of type `B` and coefficient vector of type `C`.
 """
-struct Spline{B<:AbstractBSplineBasis,C<:AbstractVector{<:Real}}
+struct Spline{B<:BSplineBasis,C<:AbstractVector{<:Real}}
     basis::B
     coeffs::C
 
-    function Spline{B,C}(basis, coeffs) where {B<:AbstractBSplineBasis,C<:AbstractVector{<:Real}}
+    function Spline{B,C}(basis, coeffs) where {B<:BSplineBasis,C<:AbstractVector{<:Real}}
         @boundscheck if eachindex(basis) != eachindex(coeffs)
             throw(DimensionMismatch("basis has indices $(eachindex(basis)), coefficient vector " *
                                     "has indices $(eachindex(coeffs))."))
@@ -17,7 +17,7 @@ struct Spline{B<:AbstractBSplineBasis,C<:AbstractVector{<:Real}}
 end
 
 """
-    Spline(basis::AbstractBSplineBasis, coeffs)
+    Spline(basis, coeffs)
 
 Create a spline from a B-spline basis and a vector of coefficients.
 """
@@ -88,13 +88,13 @@ order(s::Spline) = order(basis(s))
 Type for a B-spline from a B-spline basis of type `B`. `BSpline`s can be obtained by
 indexing into a B-spline basis.
 """
-const BSpline = Spline{B, StandardBasisVector{Bool}} where B<:AbstractBSplineBasis
+const BSpline = Spline{B, StandardBasisVector{Bool}} where B<:BSplineBasis
 
-@propagate_inbounds BSpline{B}(basis, index::Integer) where B<:AbstractBSplineBasis =
+@propagate_inbounds BSpline{B}(basis, index::Integer) where B<:BSplineBasis =
     BSpline{B}(basis, StandardBasisVector(length(basis), index))
 
 """
-    BSpline(basis::AbstractBSplineBasis, index)
+    BSpline(basis::BSplineBasis, index)
 
 Return the `index`-th B-spline of `basis`.
 
@@ -111,7 +111,7 @@ BSpline{BSplineBasis{UnitRange{Int64}}}:
  index: 3 (knots: [1, 1, 1, 2, 3, 4])
 ```
 """
-@propagate_inbounds BSpline(basis::B, index::Integer) where B<:AbstractBSplineBasis =
+@propagate_inbounds BSpline(basis::B, index::Integer) where B<:BSplineBasis =
     BSpline{B}(basis, index)
 
 Base.show(io::IO, x::BSpline) =
@@ -220,3 +220,63 @@ julia> spl(5, Derivative(1))
 ```
 """
 splinevalue(::Spline, x, ::Derivative; kwargs...)
+
+function splinevalue(spline::Spline, x, drv::Derivative{N}=NoDerivative();
+                     leftknot=intervalindex(basis(spline), x)) where N
+    check_intervalindex(spline, x, leftknot)
+    T = bspline_returntype(spline, x)
+    leftknot === nothing && return isnan(x) ? T(NaN) : zero(T)
+    if spline isa BSpline
+        iszero_bspline(spline, leftknot) && return zero(T)
+    end
+    N ≥ order(spline) && return zero(T)
+    @inbounds _splinevalue(T, basis(spline), coeffs(spline), x, leftknot, drv)
+end
+
+# Return true iff `spline` is zero on the interval given by `leftknot`
+function iszero_bspline(spline::BSpline, leftknot::Integer)
+    i = coeffs(spline).index
+    (i < leftknot-order(spline)+1) | (i > leftknot)
+end
+
+# The implementation of this method (and the methods iterate_splinevalue_derivatives! and
+# iterate_splinevalue_bsplines! it calls) is adapted from the Fortran subroutine BVALUE from
+# Carl de Boor’s book *A practical Guide to Splines* [^deBoor1978].
+#
+# [^deBoor1978]:
+#     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
+@propagate_inbounds function _splinevalue(T::Type, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
+    t = knots(basis)
+    k = order(basis)
+    A = Vector{T}(undef, k)
+    A .= @view coeffs[leftknot-k+1:leftknot]
+    # Difference the coefficients (stored in A) N times
+    for j = 1:N
+        iterate_splinevalue_derivatives!(A, t, k, j, leftknot)
+    end
+    # Compute value of N-th derivative at x from its B-spline coefficients in A[1:k-N]
+    for j = N+1:k-1
+        iterate_splinevalue_bsplines!(A, t, k, j, x, leftknot)
+    end
+    A[1]
+end
+
+@propagate_inbounds function iterate_splinevalue_bsplines!(coeffs, knots, k, j, x, leftknot)
+    kmj = k-j
+    for i = 1:kmj
+        rindex = leftknot + i
+        lindex = rindex - kmj
+        tl = knots[lindex]
+        tr = knots[rindex]
+        coeffs[i] = (coeffs[i+1]*(x-tl) + coeffs[i]*(tr-x)) / (tr - tl)
+    end
+end
+
+@propagate_inbounds function iterate_splinevalue_derivatives!(coeffs, knots, k, j, leftknot)
+    kmj = k-j
+    for i = 1:kmj
+        rindex = leftknot + i
+        lindex = rindex - kmj
+        coeffs[i] = (coeffs[i+1] - coeffs[i]) / (knots[rindex] - knots[lindex]) * kmj
+    end
+end
