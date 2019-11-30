@@ -653,9 +653,10 @@ destarray_axes(basis, ::AllDerivatives{N}) where N = (Base.OneTo(order(basis)), 
 @propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::NoDerivUnion)
     t = knots(basis)
     k = order(basis)
+    xtyped = convert(eltype(dest), x)
     dest[1] = one(eltype(dest))
     for j = 1:k-1
-        iterate_bsplines!(dest, dest, t, j, x, leftknot)
+        iterate_bsplines!(dest, dest, t, j, xtyped, leftknot)
     end
     return leftknot-k
 end
@@ -669,6 +670,7 @@ end
 @propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::AllDerivatives{N}) where N
     t = knots(basis)
     k = order(basis)
+    xtyped = convert(eltype(dest), x)
     N′ = min(k, N)
     # Set k-th and higher derivatives to zero
     dest[:, N′+1:N] .= zero(eltype(dest))
@@ -676,13 +678,13 @@ end
     lastcol = @view dest[N′:k, N′]
     lastcol[1] = one(eltype(dest))
     for j = 1:k-N′
-        iterate_bsplines!(lastcol, lastcol, t, j, x, leftknot)
+        iterate_bsplines!(lastcol, lastcol, t, j, xtyped, leftknot)
     end
     newcol = lastcol
     for j = k-N′+1:k-1
         oldcol = newcol
         newcol = @view dest[k-j:k, k-j]
-        iterate_bsplines!(newcol, oldcol, t, j, x, leftknot)
+        iterate_bsplines!(newcol, oldcol, t, j, xtyped, leftknot)
     end
     # Successively calculate coefficients for derivatives and combine them with B-splines
     drvcoeffs = Matrix{eltype(dest)}(I, k, k)
@@ -709,6 +711,7 @@ end
 @propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
+    xtyped = convert(eltype(dest), x)
     if N ≥ k
         # k-th and higher derivatives are zero
         dest .= zero(eltype(dest))
@@ -718,7 +721,7 @@ end
         # col = uview(dest, N+1:k)
         col[1] = one(eltype(dest))
         for j = 1:k-N-1
-            iterate_bsplines!(col, col, t, j, x, leftknot)
+            iterate_bsplines!(col, col, t, j, xtyped, leftknot)
         end
         # Calculate coefficients for derivatives and combine them with B-splines
         drvcoeffs = Matrix{eltype(dest)}(I, k, k)
@@ -738,11 +741,11 @@ end
 end
 
 # Take the B-splines of order `j` from `src[1:j]` and write the B-splines of order `j+1` to `dest[1:j+1]`
-@propagate_inbounds function iterate_bsplines!(dest, src, knots, j, x, leftknot)
-    saved = zero(eltype(dest))
+@propagate_inbounds function iterate_bsplines!(dest::AbstractArray{T}, src::AbstractArray{T}, knots, j, x::T, leftknot) where T
+    saved = zero(T)
     for r = 1:j
-        tₗ₊ᵣ   = knots[leftknot+r]
-        tₗ₊ᵣ₋ⱼ = knots[leftknot+r-j]
+        tₗ₊ᵣ   = convert(T, knots[leftknot+r])
+        tₗ₊ᵣ₋ⱼ = convert(T, knots[leftknot+r-j])
         term = src[r] / (tₗ₊ᵣ - tₗ₊ᵣ₋ⱼ)
         dest[r] = saved + (tₗ₊ᵣ - x) * term
         saved = oftype(saved, (x - tₗ₊ᵣ₋ⱼ) * term)
@@ -751,11 +754,11 @@ end
 end
 
 # Iterate the coefficients in `coeffs` from the `deriv-1`-th to the `deriv`-th derivative
-@propagate_inbounds function iterate_derivatives!(coeffs, knots, k, deriv, leftknot)
+@propagate_inbounds function iterate_derivatives!(coeffs::AbstractArray{T}, knots, k, deriv, leftknot) where T
     kmd = k-deriv
     for j = 1:kmd
         lp1mj = leftknot+1-j
-        factor = kmd / (knots[lp1mj+kmd] - knots[lp1mj])
+        factor = kmd / (convert(T, knots[lp1mj+kmd]) - convert(T, knots[lp1mj]))
         row = k+1-j
         for col = 1:row
             coeffs[row, col] = (coeffs[row, col] - coeffs[row-1, col]) * factor

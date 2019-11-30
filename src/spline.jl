@@ -248,6 +248,7 @@ end
 @propagate_inbounds function _splinevalue(T::Type, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
+    xtyped = convert(T, x)
     A = Vector{T}(undef, k)
     A .= @view coeffs[leftknot-k+1:leftknot]
     # Difference the coefficients (stored in A) N times
@@ -256,27 +257,27 @@ end
     end
     # Compute value of N-th derivative at x from its B-spline coefficients in A[1:k-N]
     for j = N+1:k-1
-        iterate_splinevalue_bsplines!(A, t, k, j, x, leftknot)
+        iterate_splinevalue_bsplines!(A, t, k, j, xtyped, leftknot)
     end
     A[1]
 end
 
-@propagate_inbounds function iterate_splinevalue_bsplines!(coeffs, knots, k, j, x, leftknot)
+@propagate_inbounds function iterate_splinevalue_bsplines!(coeffs::AbstractArray{T}, knots, k, j, x::T, leftknot) where T
     kmj = k-j
     for i = 1:kmj
         rindex = leftknot + i
         lindex = rindex - kmj
-        tl = knots[lindex]
-        tr = knots[rindex]
+        tl = convert(T, knots[lindex])
+        tr = convert(T, knots[rindex])
         coeffs[i] = (coeffs[i+1]*(x-tl) + coeffs[i]*(tr-x)) / (tr - tl)
     end
 end
 
-@propagate_inbounds function iterate_splinevalue_derivatives!(coeffs, knots, k, j, leftknot)
+@propagate_inbounds function iterate_splinevalue_derivatives!(coeffs::AbstractArray{T}, knots, k, j, leftknot) where T
     kmj = k-j
     for i = 1:kmj
         rindex = leftknot + i
         lindex = rindex - kmj
-        coeffs[i] = (coeffs[i+1] - coeffs[i]) / (knots[rindex] - knots[lindex]) * kmj
+        coeffs[i] = (coeffs[i+1] - coeffs[i]) / (convert(T, knots[rindex]) - convert(T, knots[lindex])) * kmj
     end
 end
