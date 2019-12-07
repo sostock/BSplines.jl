@@ -226,9 +226,11 @@ optimum” and are computationally inexpensive.
 
 # Examples
 
-```
+```jldoctest
 julia> averagebasis(5, 0:10)
-BSplineBasis{Array{Float64,1}}(5, [0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0])
+11-element BSplineBasis{Array{Float64,1}}:
+ order: 5
+ breakpoints: [0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0]
 ```
 """
 function averagebasis(order::Integer, datapoints::AbstractVector{<:Real})
