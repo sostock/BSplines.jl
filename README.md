@@ -5,6 +5,8 @@
 [![codecov](https://codecov.io/gh/sostock/BSplines.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/sostock/BSplines.jl)
 [![Coverage Status](https://coveralls.io/repos/github/sostock/BSplines.jl/badge.svg?branch=master)](https://coveralls.io/github/sostock/BSplines.jl?branch=master)
 
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sostock.github.io/BSplines.jl/dev)
+
 This package provides data types and functions for working with [B-splines](https://en.wikipedia.org/wiki/B-spline).
 It is currently **work in progress**.
 
