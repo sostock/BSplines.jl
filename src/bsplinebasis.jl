@@ -16,7 +16,6 @@ struct BSplineBasis{T<:AbstractVector{<:Real}}
         order ≥ 1 || throw(DomainError(order, "order of B-splines must be positive."))
         length(breakpoints) ≥ 2 || throw(ArgumentError("length of breakpoint vector must be at least 2."))
         has_offset_axes(breakpoints) && throw(ArgumentError("breakpoint vector must not have offset axes."))
-        issorted(breakpoints) || throw(ArgumentError("breakpoint sequence must be non-decreasing."))
         new(order, breakpoints)
     end
 end
@@ -24,7 +23,8 @@ end
 """
     BSplineBasis(order, breakpoints)
 
-Create a B-spline basis with order `order` and breakpoint vector `breakpoints`.
+Create a B-spline basis with order `order` and breakpoint vector `breakpoints`. The
+breakpoint vector is assumed to be sorted.
 """
 BSplineBasis(order, breakpoints) = BSplineBasis{typeof(breakpoints)}(order, breakpoints)
 

@@ -215,7 +215,7 @@ end
     averagebasis(order, datapoints) -> BSplineBasis
 
 Returns a B-spline basis with the specified `order` that is well-suited for interpolation on
-the given `datapoints`.
+the given `datapoints`. The `datapoints` vector is assumed to be sorted.
 
 The calculated breakpoints are described in [^deBoor1978], p. 219, as a “reasonable
 alternative” to the optimal breakpoint sequence since they are “often very close to the
@@ -234,7 +234,6 @@ julia> averagebasis(5, 0:10)
 ```
 """
 function averagebasis(order::Integer, datapoints::AbstractVector{<:Real})
-    issorted(datapoints) || throw(ArgumentError("datapoints must be sorted."))
     if order > length(datapoints)
         throw(ArgumentError("order cannot not be greater than number of datapoints."))
     end

@@ -25,6 +25,11 @@ order(basis)
 breakpoints(basis)
 length(basis)
 ```
+
+!!! warning
+    To obtain a valid B-spline basis, the breakpoint vector must be sorted in ascending order.
+    This is not checked by the `BSplineBasis` constructor.
+
 The [`knots`](@ref) function returns the knot vector that is generated from the breakpoints.
 In order to not allocate memory for a new array, a wrapper type around the original breakpoint vector is used:
 ```@repl basis

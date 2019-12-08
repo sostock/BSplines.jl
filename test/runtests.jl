@@ -225,8 +225,6 @@ end
         @test_throws DomainError BSplineBasis(0, 0:5) # order must be positive
         @test_throws InexactError BSplineBasis(5.5, 0:5) # order must be integer
         @test_throws TypeError BSplineBasis(5.5, [1+2im, 3+4im, 5+6im]) # breakpoints must be real
-        @test_throws ArgumentError BSplineBasis(5, 5:-1:1) # breakpoints must be sorted
-        @test_throws ArgumentError BSplineBasis(5, [1,2,3,2,1]) # breakpoints must be sorted
         @test_throws ArgumentError BSplineBasis(5, 1:0) # breakpoints must have length ≥ 2
         @test_throws ArgumentError BSplineBasis(5, [1]) # breakpoints must have length ≥ 2
         @test_throws ArgumentError BSplineBasis(5, OffsetArray(1:5, 1)) # breakpoints must not have offset axes
@@ -641,9 +639,7 @@ end
     @test averagebasis(6, 1//1:1//1:10//1) == BSplineBasis(6, [1, 4, 5, 6, 7, 10])
     @test averagebasis(7, 1:7) ≈ₜₑₛₜ BSplineBasis(7, [1, 7])
     @test averagebasis(7, 1//1:7//1) == BSplineBasis(7, [1, 7])
-    @test_throws ArgumentError averagebasis(8, 1:7)
-    @test_throws ArgumentError averagebasis(3, 10:-1:0)
-    @test_throws ArgumentError averagebasis(3, [1, 2, 3, 4, 3, 5])
+    @test_throws ArgumentError averagebasis(8, 1:7) # too few datapoints
 end
 
 @testset "knotaverages" begin

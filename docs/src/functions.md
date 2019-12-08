@@ -20,7 +20,11 @@ The [`knotaverages!`](@ref) function can be used to write the knot averages to a
 
 ### `averagebasis`
 
-The [`averagebasis`](@ref) function returns a B-spline basis of a specified order that is well-suited for interpolating a function at a given set of data points.
+The [`averagebasis`](@ref) function returns a `BSplineBasis` of a specified order that is well-suited for interpolating a function at a given set of data points.
+
+!!! warning
+    To obtain a valid B-spline basis, the data points must be sorted in ascending order.
+    This is not checked by the `averagebasis` function.
 
 ### `interpolate`
 
