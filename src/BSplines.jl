@@ -62,6 +62,22 @@ The approximation is calculated by interpolating samples of `f` at the
 [`knotaverages`](@ref) of the basis.
 
 See also: [`interpolate`](@ref)
+
+# Examples
+
+```jldoctest
+julia> basis = BSplineBasis(5, 0:5);
+
+julia> spl = approximate(sin, basis, indices=2:length(basis))
+Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
+ basis: 9-element BSplineBasis{UnitRange{Int64}}:
+  order: 5
+  breakpoints: 0:5
+ coeffs: [0.0, 0.24963094468700395, 0.7525104872191076, 1.229735980709192, 0.7385208497317045, -0.4328168377896504, -1.0125409246826416, -1.029692234224304, -0.9589242746631385]
+
+julia> spl(π/4)
+0.7071028397621081
+```
 """
 function approximate(f, basis::BSplineBasis; indices::Union{AbstractUnitRange,Colon}=Colon())
     xvalues = knotaverages(basis, indices=indices)
@@ -78,6 +94,24 @@ The spline interpolation is calculated by creating the matrix
 `B = [basis[i](x) for x=xvalues, i=indices]` and then calculating `B\\yvalues`.
 
 See also: [`approximate`](@ref)
+
+# Examples
+
+```jldoctest
+julia> basis = BSplineBasis(5, 1:10);
+
+julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
+
+julia> spl = interpolate(basis, xs, ys)
+Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
+ basis: 13-element BSplineBasis{UnitRange{Int64}}:
+  order: 5
+  breakpoints: 1:10
+ coeffs: [0.0, 0.2480193113006778, 0.5968722382485209, 0.9466707785821219, 1.2689430722820556, 1.5140484163988175, 1.7114875128056504, 1.8766572742486973, 2.0185639127626325, 2.1429230073972407, 2.2259183994808813, 2.2775846911059, 2.302585092994046]
+
+julia> spl(float(ℯ))
+0.9999766059171411
+```
 """
 function interpolate(basis::BSplineBasis, xvalues::AbstractVector, yvalues::AbstractVector;
                      indices::Union{AbstractUnitRange,Colon}=Colon())
