@@ -1,4 +1,4 @@
-# [WIP] BSplines
+# BSplines
 
 [![Build Status](https://travis-ci.com/sostock/BSplines.jl.svg?branch=master)](https://travis-ci.com/sostock/BSplines.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/ruh7o1yalohqawbd/branch/master?svg=true)](https://ci.appveyor.com/project/sostock/bsplines-jl/branch/master)
@@ -7,12 +7,11 @@
 
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sostock.github.io/BSplines.jl/dev)
 
-This package provides data types and functions for working with [B-splines](https://en.wikipedia.org/wiki/B-spline).
-It is currently **work in progress**.
+This package provides data types and functions for working with [B-splines](https://en.wikipedia.org/wiki/B-spline) as a means to approximate real functions.
+For its usage, see the [documentation](https://sostock.github.io/BSplines.jl/dev).
 
-**This package is not related to the [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) package with the same name.
-The packages do not share any API or implementation.
-While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible with Julia ≤ 0.4, this package only works with Julia ≥ 0.7.**
+**This package is not related to the package at [https://github.com/gusl/BSplines.jl](https://github.com/gusl/BSplines.jl).
+While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible with Julia ≤ 0.4, this package works with Julia ≥ 0.7.**
 
 ## Installation
 
