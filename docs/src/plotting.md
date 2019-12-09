@@ -2,6 +2,9 @@
 
 This package defines plot recipes for use with [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
 
+!!! compat
+    Some of the plot recipes require at least RecipesBase 0.6, which requires at least Julia 1.0.
+
 ## Plotting a `BSplineBasis`
 
 A B-spline basis can be plotted by passing it to the `Plots.plot` function:
