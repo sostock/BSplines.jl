@@ -4,7 +4,7 @@ This package provides data types and functions for working with [B-splines](http
 
 ## Installation
 
-This package is compatible with Julia ≥ 0.7. It is currently not registered and can be installed by typing
+This package is compatible with Julia ≥ 1.0. It is currently not registered and can be installed by typing
 ```
 ] add https://github.com/sostock/BSplines.jl
 ```

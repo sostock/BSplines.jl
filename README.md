@@ -11,11 +11,11 @@ This package provides data types and functions for working with [B-splines](http
 For its usage, see the [documentation](https://sostock.github.io/BSplines.jl/dev).
 
 **This package is not related to the package at [https://github.com/gusl/BSplines.jl](https://github.com/gusl/BSplines.jl).
-While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible with Julia ≤ 0.4, this package works with Julia ≥ 0.7.**
+While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible with Julia ≤ 0.4, this package works with Julia ≥ 1.0.**
 
 ## Installation
 
-This package is compatible with Julia ≥ 0.7. It is currently not registered and can be installed by typing
+This package is compatible with Julia ≥ 1.0. It is currently not registered and can be installed by typing
 ```
 ] add https://github.com/sostock/BSplines.jl
 ```
