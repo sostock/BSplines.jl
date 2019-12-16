@@ -15,9 +15,9 @@ While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible
 
 ## Installation
 
-This package is compatible with Julia ≥ 1.0. It is currently not registered and can be installed by typing
+This package is compatible with Julia ≥ 1.0. It can be installed by typing
 ```
-] add https://github.com/sostock/BSplines.jl
+] add BSplines
 ```
 in the Julia REPL.
 
