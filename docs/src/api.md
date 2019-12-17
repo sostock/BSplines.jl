@@ -21,6 +21,8 @@ Function
 approximate
 averagebasis
 basis
+basismatrix
+basismatrix!
 breakpoints
 bsplines!
 bsplines

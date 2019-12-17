@@ -18,6 +18,8 @@ export
     approximate,
     averagebasis,
     basis,
+    basismatrix,
+    basismatrix!,
     breakpoints,
     bsplines,
     bsplines!,
@@ -121,7 +123,7 @@ function interpolate(basis::BSplineBasis, xvalues::AbstractVector, yvalues::Abst
     if length(xvalues) != length(yvalues)
         throw(DimensionMismatch("lengths of x and y values do not match."))
     end
-    bmatrix = basismatrix(basis, xvalues, indices)
+    bmatrix = basismatrix(basis, xvalues, indices=indices)
     _interpolate(basis, bmatrix, yvalues, indices)
 end
 

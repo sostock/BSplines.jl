@@ -527,6 +527,34 @@ include("splinevalue.jl")
     end
 end
 
+@testset "basismatrix" begin
+    basis = BSplineBasis(3, 0:5)
+    xvalues = [0.3, 1.5, 3.2]
+    @test basismatrix(basis, xvalues) == [basis[i](x) for x=xvalues, i=eachindex(basis)]
+    @test basismatrix(basis, xvalues, indices=2:5) == [basis[i](x) for x=xvalues, i=2:5]
+    @test_throws ArgumentError basismatrix(basis, xvalues, indices=0:5)
+end
+
+@testset "basismatrix!" begin
+    basis = BSplineBasis(3, 0:5)
+    xvalues = [0.3, 1.5, 3.2]
+    @test begin
+        dest = Matrix{Float64}(undef, 3, length(basis))
+        basismatrix!(dest, basis, xvalues)
+        dest == [basis[i](x) for x=xvalues, i=eachindex(basis)]
+    end
+    @test begin
+        dest = Matrix{Float64}(undef, 3, 4)
+        basismatrix!(dest, basis, xvalues, indices=2:5)
+        dest == [basis[i](x) for x=xvalues, i=2:5]
+    end
+    @test_throws ArgumentError basismatrix!(Array{Float64}(undef, 3, 6), basis, xvalues, indices=0:5)
+    @test_throws ArgumentError basismatrix!(OffsetArray(Array{Float64}(undef, 3, length(basis)),1,1), basis, xvalues)
+    @test_throws ArgumentError basismatrix!(OffsetArray(Array{Float64}(undef, 3, 4),1,1), basis, xvalues, indices=2:5)
+    @test_throws DimensionMismatch basismatrix!(Array{Float64}(undef, 3, 4), basis, xvalues)
+    @test_throws DimensionMismatch basismatrix!(Array{Float64}(undef, 2, 4), basis, xvalues, indices=2:5)
+end
+
 @testset "approximate" begin
     basis = BSplineBasis(3, 0:5)
     knotavgs = [0.0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.0]

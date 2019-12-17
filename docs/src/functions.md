@@ -26,6 +26,17 @@ The [`averagebasis`](@ref) function returns a `BSplineBasis` of a specified orde
     To obtain a valid B-spline basis, the data points must be sorted in ascending order.
     This is not checked by the `averagebasis` function.
 
+### `basismatrix`/`basismatrix!`
+
+The [`basismatrix`](@ref) function calculates the matrix
+```math
+B_{ij} = B_j(x_i)
+```
+where ``B_j`` is the ``j``-th B-spline of a basis and ``x`` is a vector of real numbers.
+The range of indices ``j`` can be supplied with the `indices` keyword argument.
+
+The [`basismatrix!`](@ref) function can be used to write ``B_{ij}`` to a pre-allocated array.
+
 ### `interpolate`
 
 The [`interpolate`](@ref) function interpolates data (vectors of ``x`` and ``y`` values) in a given B-spline basis.
