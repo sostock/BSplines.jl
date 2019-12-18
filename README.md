@@ -5,10 +5,11 @@
 [![codecov](https://codecov.io/gh/sostock/BSplines.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/sostock/BSplines.jl)
 [![Coverage Status](https://coveralls.io/repos/github/sostock/BSplines.jl/badge.svg?branch=master)](https://coveralls.io/github/sostock/BSplines.jl?branch=master)
 
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://sostock.github.io/BSplines.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sostock.github.io/BSplines.jl/dev)
 
 This package provides data types and functions for working with [B-splines](https://en.wikipedia.org/wiki/B-spline) as a means to approximate real functions.
-For its usage, see the [documentation](https://sostock.github.io/BSplines.jl/dev).
+For its usage, see the [documentation](https://sostock.github.io/BSplines.jl/stable).
 
 **This package is not related to the package at [https://github.com/gusl/BSplines.jl](https://github.com/gusl/BSplines.jl).
 While [gusl/BSplines.jl](https://github.com/gusl/BSplines.jl) is only compatible with Julia ≤ 0.4, this package works with Julia ≥ 1.0.**
