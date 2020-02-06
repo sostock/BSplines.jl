@@ -8,7 +8,7 @@ Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
  basis: 8-element BSplineBasis{UnitRange{Int64}}:
   order: 4
   breakpoints: 0:5
- coeffs: [0.5096002064453213, 0.9323270026397867, 0.04945970249696208, 0.8715288404816319, 0.4735895003524062, 0.7140021588236551, 0.4912240303700892, 0.011997068568218472]
+ coeffs: [0.8244026243265477, 0.4776114664149731, 0.13244938927201733, 0.8055627750794305, 0.015122612207100428, 0.600712830058999, 0.47160657601220746, 0.8817090166001424]
 
 julia&gt; basis(spl) === b
 true
@@ -17,14 +17,14 @@ julia&gt; coeffs(spl) === c
 true</code></pre><h2 id="Evaluating-Splines-and-their-derivatives-1"><a class="docs-heading-anchor" href="#Evaluating-Splines-and-their-derivatives-1">Evaluating <code>Spline</code>s and their derivatives</a><a class="docs-heading-anchor-permalink" href="#Evaluating-Splines-and-their-derivatives-1" title="Permalink"></a></h2><p>To evaluate a <code>Spline</code>, it can be called as a function. Alternatively, the <a href="../api/#BSplines.splinevalue"><code>splinevalue</code></a> function can be used:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(4, 0:5), rand(8));
 
 julia&gt; spl(2.5)
-0.45661406370571367
+0.32937610512083443
 
 julia&gt; splinevalue(spl, 2.5)
-0.45661406370571367</code></pre><p>To evaluate derivatives of a spline, the optional <a href="../api/#BSplines.Derivative"><code>Derivative(N)</code></a> argument is used:</p><pre><code class="language-julia-repl">julia&gt; spl(2.5, Derivative(1))
-0.38187543553746706
+0.32937610512083443</code></pre><p>To evaluate derivatives of a spline, the optional <a href="../api/#BSplines.Derivative"><code>Derivative(N)</code></a> argument is used:</p><pre><code class="language-julia-repl">julia&gt; spl(2.5, Derivative(1))
+0.11972731774855525
 
 julia&gt; splinevalue(spl, 2.5, Derivative(2))
-0.002311483769376288</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>The <a href="../api/#BSplines.AllDerivatives"><code>AllDerivatives{N}</code></a> type is not supported as an argument.</p></div></div><p>Evaluating a spline at a point <code>x</code> requires finding the largest index <code>i</code> such that <code>t[i] ≤ x</code> and <code>t[i] &lt; t[end]</code> where <code>t</code> is the knot vector of the basis. If the index is already known, it can be specified with the <code>leftknot</code> keyword argument to speed up the computation.</p><h2 id="Arithmetic-with-Splines-1"><a class="docs-heading-anchor" href="#Arithmetic-with-Splines-1">Arithmetic with <code>Spline</code>s</a><a class="docs-heading-anchor-permalink" href="#Arithmetic-with-Splines-1" title="Permalink"></a></h2><p>A <code>Spline</code> can be multiplied or divided by a real number using <code>*</code>, <code>/</code>, or <code>\</code>. These operations return a new spline:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(3, 0:5), [1:7;])
+0.16272481406340267</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>The <a href="../api/#BSplines.AllDerivatives"><code>AllDerivatives{N}</code></a> type is not supported as an argument.</p></div></div><p>Evaluating a spline at a point <code>x</code> requires finding the largest index <code>i</code> such that <code>t[i] ≤ x</code> and <code>t[i] &lt; t[end]</code> where <code>t</code> is the knot vector of the basis. If the index is already known, it can be specified with the <code>leftknot</code> keyword argument to speed up the computation.</p><h2 id="Arithmetic-with-Splines-1"><a class="docs-heading-anchor" href="#Arithmetic-with-Splines-1">Arithmetic with <code>Spline</code>s</a><a class="docs-heading-anchor-permalink" href="#Arithmetic-with-Splines-1" title="Permalink"></a></h2><p>A <code>Spline</code> can be multiplied or divided by a real number using <code>*</code>, <code>/</code>, or <code>\</code>. These operations return a new spline:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(3, 0:5), [1:7;])
 Spline{BSplineBasis{UnitRange{Int64}},Array{Int64,1}}:
  basis: 7-element BSplineBasis{UnitRange{Int64}}:
   order: 3
@@ -106,4 +106,4 @@ julia&gt; support(spl) # support of the basis
 (0, 5)
 
 julia&gt; support(bspl) # actual support of the B-spline
-(0, 3)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basis/">« The <code>BSplineBasis</code> type</a><a class="docs-footer-nextpage" href="../functions/">Higher-level functions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 6 February 2020 16:10">Thursday 6 February 2020</span>. Using Julia version 1.3.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+(0, 3)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basis/">« The <code>BSplineBasis</code> type</a><a class="docs-footer-nextpage" href="../functions/">Higher-level functions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 6 February 2020 20:39">Thursday 6 February 2020</span>. Using Julia version 1.3.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
