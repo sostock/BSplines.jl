@@ -1,4 +1,6 @@
-using RecipesBase
+import RecipesBase
+
+using RecipesBase: @recipe
 
 """
     SplineFunctionWrapper{S<:Spline, D<:Derivative, OnlySupport} <: Function
