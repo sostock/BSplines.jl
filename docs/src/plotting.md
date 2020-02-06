@@ -21,7 +21,7 @@ The number of samples can be changed with an optional argument, i.e., `plot(basi
 `Spline`s can be plotted like functions:
 
 ```julia
-basis = BSpline(4, 0:5)
+basis = BSplineBasis(4, 0:5)
 spl = approximate(sin, basis)
 plot(1:5, spl)  # evaluate spl on the points 1:5 and plot it
 plot(spl, 1, 3) # plot spl from 1 to 3
