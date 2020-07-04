@@ -321,7 +321,7 @@ end
 
     @testset "Printing" begin
         @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{UnitRange{$Int}}"
-        @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{Array{Float64,1}}"
+        @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{$(Vector{Float64})}"
     end
 end
 
