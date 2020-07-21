@@ -106,8 +106,8 @@ bsplines!(mat, basis, 4, AllDerivatives(2))
 mat
 ```
 
-When only calculating B-splines or their derivatives via `Derivative{N}`, the destination array must be of length `order(basis)`.
-In the case of the `AllDerivatives{N}` argument, the destination array must be an `order(basis) × N` matrix.
+When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, the destination array must have the length `order(basis)`.
+In the case of the `AllDerivatives{N}` argument, the destination must be a matrix of size `(order(basis), N)`.
 In any case, the destination array must not have offset axes.
 
 ### Specifying the relevant interval
@@ -134,5 +134,5 @@ There is currently no way to create a `BSplineBasis` where the first and last kn
 However, some functions provided by this package (see [Higher-level functions](@ref)) provide a `indices` keyword argument to select only a certain range of B-splines from a basis, thus achieving the same result as if the knot vector had been shortened.
 
 Because of repeated knots, not every pair of knots `(t[i], t[i+1])` describes an actual interval.
-The [`intervalindices`](@ref) helps with finding all indices which describe relevant intervals.
+The [`intervalindices`](@ref) function helps with finding all indices which describe relevant intervals.
 See its docstrings for more information.
