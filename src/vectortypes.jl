@@ -22,9 +22,9 @@ the front and the last element `back` times at the back. (not exported)
 
 # Examples 
 
-```jldoctest; setup = :(using BSplines: KnotVector)
-julia> KnotVector(0:4, 2)
-9-element KnotVector{Int64,UnitRange{Int64}}:
+```jldoctest
+julia> BSplines.KnotVector(0:4, 2)
+9-element BSplines.KnotVector{Int64,UnitRange{Int64}}:
  0
  0
  0
@@ -35,8 +35,8 @@ julia> KnotVector(0:4, 2)
  4
  4
 
-julia> KnotVector(["first", "second", "last"], 2, 3)
-8-element KnotVector{String,Array{String,1}}:
+julia> BSplines.KnotVector(["first", "second", "last"], 2, 3)
+8-element BSplines.KnotVector{String,Array{String,1}}:
  "first"
  "first"
  "first"
@@ -98,17 +98,17 @@ other elements are equal to `0`. The elements are of type `T`. (not exported)
 
 # Examples
 
-```jldoctest; setup = :(using BSplines: StandardBasisVector)
-julia> StandardBasisVector(5, 3)
-5-element StandardBasisVector{Bool}:
+```jldoctest
+julia> BSplines.StandardBasisVector(5, 3)
+5-element BSplines.StandardBasisVector{Bool}:
  0
  0
  1
  0
  0
 
-julia> StandardBasisVector(Float64, 6, 2)
-6-element StandardBasisVector{Float64}:
+julia> BSplines.StandardBasisVector(Float64, 6, 2)
+6-element BSplines.StandardBasisVector{Float64}:
  0.0
  1.0
  0.0
