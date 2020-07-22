@@ -106,7 +106,7 @@ bsplines!(mat, basis, 4, AllDerivatives(2))
 mat
 ```
 
-When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, the destination array must have the length `order(basis)`.
+When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, the destination must be a vector of length `order(basis)`.
 In the case of the `AllDerivatives{N}` argument, the destination must be a matrix of size `(order(basis), N)`.
 In any case, the destination array must not have offset axes.
 
