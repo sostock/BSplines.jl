@@ -65,6 +65,9 @@ Base.first(p::KnotVector) = @inbounds first(parent(p))
 Base.last(p::KnotVector) = @inbounds last(parent(p))
 Base.issorted(p::KnotVector) = issorted(parent(p))
 
+Base.allunique(p::KnotVector) = iszero(p.front) && iszero(p.back) && allunique(parent(p))
+Base.unique(p::KnotVector) = unique(parent(p))
+
 function intervalindex(p::KnotVector, x)
     index = intervalindex(parent(p), x)
     index === nothing && return nothing

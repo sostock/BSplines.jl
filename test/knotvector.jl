@@ -104,4 +104,16 @@
         @test (vec = big(-1):big(1); parent(KnotVector(vec, 2)) === vec)
         @test (vec = UInt8(0):UInt8(3); parent(KnotVector(KnotVector(vec, 2, 1), 2)) === vec)
     end
+
+    @testset "unique/allunique" begin
+        @test unique(KnotVector(1:3, 5)) == [1,2,3]
+        @test unique(KnotVector([0], 2, 3)) == [0]
+        @test unique(KnotVector([1,1,2,1], 0)) == [1,2]
+        @test unique(KnotVector([1,1,2,1], 3)) == [1,2]
+        @test allunique(KnotVector(1:5, 0))
+        @test !allunique(KnotVector(1:5, 1))
+        @test !allunique(KnotVector(1:5, 0, 1))
+        @test !allunique(KnotVector(1:5, 2, 0))
+        @test !allunique(KnotVector([1,1], 0))
+    end
 end
