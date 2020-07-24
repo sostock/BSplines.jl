@@ -128,7 +128,7 @@ Base.size(A::StandardBasisVector) = (A.length,)
 
 @inline @propagate_inbounds function Base.getindex(A::StandardBasisVector, i::Int)
     @boundscheck checkbounds(A, i)
-    ifelse(i == A.index, one(eltype(A)), zero(eltype(A)))
+    convert(eltype(A), i == A.index)
 end
 
 Base.:(==)(x::StandardBasisVector, y::StandardBasisVector) =
