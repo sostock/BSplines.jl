@@ -1,22 +1,23 @@
 """
     BSplineBasis{T<:AbstractVector{<:Real}}
 
-Type for a B-spline basis with breakpoint vector of type `T`.
+Type for a B-spline basis with knot vector of type `T`.
 
-Here, a B-spline basis is completely specified by its order ``k`` and breakpoint sequence.
-The knot sequence is derived from the breakpoint sequence by duplicating the first and last
-breakpoints so they each appear ``k`` times. Knot sequences where the first and last
-breakpoints do not appear ``k`` times are not supported by this data type.
+A B-spline basis is completely specified by its order ``k`` and knot sequence. The
+`BSplineBasis` type supports only knot sequences where the first and the last breakpoint
+each appear ``k`` times. This is ensured by the constructor, which takes a breakpoint
+sequence as argument and duplicates the first and the last breakpoint to create a valid
+knot sequence.
 """
 struct BSplineBasis{T<:AbstractVector{<:Real}}
     order::Int
-    breakpoints::T
+    knots::T
 
     function BSplineBasis{T}(order, breakpoints) where T<:AbstractVector{<:Real}
         order ≥ 1 || throw(DomainError(order, "order of B-splines must be positive."))
         length(breakpoints) ≥ 2 || throw(ArgumentError("length of breakpoint vector must be at least 2."))
         has_offset_axes(breakpoints) && throw(ArgumentError("breakpoint vector must not have offset axes."))
-        new(order, breakpoints)
+        new(order, KnotVector(breakpoints, order-1))
     end
 end
 
@@ -25,14 +26,21 @@ end
 
 Create a B-spline basis with order `order` and breakpoint vector `breakpoints`. The
 breakpoint vector is assumed to be sorted.
-"""
-BSplineBasis(order, breakpoints) = BSplineBasis{typeof(breakpoints)}(order, breakpoints)
 
-Base.:(==)(x::BSplineBasis, y::BSplineBasis) =
-    order(x) == order(y) && breakpoints(x) == breakpoints(y)
+The knot vector is created from the breakpoint vector by duplicating the first and last
+elements so that they appear `order` times. Knot sequences where the first and last
+breakpoints do appear less than `order` times are currently not supported by the
+`BSplineBasis` type.
+"""
+function BSplineBasis(order, breakpoints)
+    T = KnotVector{eltype(breakpoints), typeof(breakpoints)}
+    BSplineBasis{T}(order, breakpoints)
+end
+
+Base.:(==)(x::BSplineBasis, y::BSplineBasis) = order(x) == order(y) && knots(x) == knots(y)
 
 Base.hash(x::BSplineBasis, h::UInt) =
-    hash(breakpoints(x), hash(order(x), hash(:BSplineBasis, h)))
+    hash(knots(x), hash(order(x), hash(:BSplineBasis, h)))
 
 function Base.checkbounds(b::BSplineBasis, i)
     checkbounds(Bool, b, i) || Base.throw_boundserror(b, i)
@@ -44,7 +52,7 @@ Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
 Base.eltype(b::BSplineBasis) = BSpline{typeof(b)}
 
-Base.length(b::BSplineBasis) = length(breakpoints(b)) + order(b) - 2
+Base.length(b::BSplineBasis) = length(knots(b)) - order(b)
 
 Base.iterate(b::BSplineBasis, i=1) = i-1 < length(b) ? (@inbounds b[i], i+1) : nothing
 
@@ -61,7 +69,7 @@ end
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')
     println(io, " order: ", order(basis))
-    print(io, " breakpoints: ", breakpoints(basis))
+    print(io, " knots: ", knots(basis))
 end
 
 Base.summary(io::IO, basis::BSplineBasis) =
@@ -72,29 +80,35 @@ Base.summary(io::IO, basis::BSplineBasis) =
 
 Return the breakpoint sequence of the B-spline basis.
 
+The returned vector contains only unique values. It is *not* identical (`===`) to the
+breakpoint vector that was used to create the basis.
+
 # Examples
 
 ```jldoctest
 julia> breakpoints(BSplineBasis(3, 0:5))
-0:5
+6-element Array{Int64,1}:
+ 0
+ 1
+ 2
+ 3
+ 4
+ 5
 
-julia> breakpoints(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
+julia> breakpoints(BSplineBasis(4, [1.0, 2.0, 2.0, 3.0, 4.0]))
 4-element Array{Float64,1}:
  1.0
- 1.5
- 2.5
+ 2.0
+ 3.0
  4.0
 ```
 """
-breakpoints(b::BSplineBasis) = b.breakpoints
+breakpoints(b::BSplineBasis) = unique(knots(b))
 
 """
     knots(basis::BSplineBasis)
 
 Return the knot sequence of the B-spline basis.
-
-The knot sequence is the breakpoint sequence except that the first and last values are
-duplicated so they appear `order(basis)` times.
 
 # Examples
 
@@ -113,7 +127,7 @@ julia> knots(BSplineBasis(3, 0:5))
  5
 ```
 """
-knots(b::BSplineBasis) = @inbounds KnotVector(breakpoints(b), order(b)-1)
+knots(b::BSplineBasis) = b.knots
 
 """
     order(spline::Spline)
@@ -269,7 +283,7 @@ end
 """
     IntervalIndices(vec, indices, offset)
 
-Return an iterator that yields the numbers
+Return an iterator that produces the numbers
 `(i + offset for i = indices[1:end-1] if vec[i] < vec[i+1])`. (not exported)
 """
 IntervalIndices(vec::T, indices, offset) where T<:AbstractVector{<:Real} =
@@ -292,11 +306,11 @@ end
 """
     intervalindices(basis::BSplineBasis, indices=eachindex(basis))
 
-Return an iterator that yields the indices of all intervals on which `basis` is defined,
-i.e., it produces all indices `ind` (in ascending order) for which
+Return an iterator that produces the indices of all intervals on which `basis` is defined,
+i.e., all indices `ind` (in ascending order) for which
 `(knots(basis)[ind], knots(basis)[ind+1])` is such an interval. 
 
-If a range of `indices` is supplied, the iterator yields only those intervals on which *at
+If a range of `indices` is supplied, the iterator produces only those intervals on which *at
 least one* of the B-splines `basis[j] for j=indices` is non-zero.
 
 # Examples
@@ -322,31 +336,33 @@ julia> collect(ans)
 """
 intervalindices(::BSplineBasis, ::Union{AbstractUnitRange,Colon}=Colon())
 
+strip_knots(vec::AbstractVector) = (vec, 0)
+strip_knots(vec::KnotVector) = (parent(vec), vec.front)
+
 function intervalindices(basis::BSplineBasis, indices::Colon=Colon())
-    bps = breakpoints(basis)
-    _intervalindices(bps, eachindex(bps), order(basis)-1)
+    stripped_knots, offset = strip_knots(knots(basis))
+    _intervalindices(stripped_knots, eachindex(stripped_knots), offset)
 end
 
 function intervalindices(basis::BSplineBasis, indices::AbstractUnitRange)
     checkbounds(basis, indices)
-    bps = breakpoints(basis)
-    km1 = order(basis)-1
+    stripped_knots, offset = strip_knots(knots(basis))
     if isempty(indices)
-        _intervalindices(bps, 1:0, km1)
+        _intervalindices(stripped_knots, 1:0, offset)
     else
-        firstknotindex = max(first(indices)-km1, firstindex(bps))
-        lastknotindex  = min(last(indices)+1, lastindex(bps))
-        _intervalindices(bps, firstknotindex:lastknotindex, km1)
+        firstknotindex = max(first(indices)-offset, firstindex(stripped_knots))
+        lastknotindex  = min(last(indices)+order(basis)-offset, lastindex(stripped_knots))
+        _intervalindices(stripped_knots, firstknotindex:lastknotindex, offset)
     end
 end
 
 """
     intervalindices(basis::BSplineBasis, i, j, ...)
 
-For integers `i`, `j`, …, return an iterator that yields the indices of all intervals on
-which *all* of the B-splines `basis[i]`, `basis[j]`, … are non-zero, i.e., it produces all
-indices `ind` (in ascending order) for which `(knots(basis)[ind], knots(basis)[ind+1])` is
-such an interval.
+For integers `i`, `j`, …, return an iterator that produces the indices of all intervals on
+which *all* of the B-splines `basis[i]`, `basis[j]`, … are non-zero, i.e., all indices `ind`
+(in ascending order) for which `(knots(basis)[ind], knots(basis)[ind+1])` is such an
+interval.
 
 # Examples
 
@@ -376,11 +392,10 @@ function intervalindices(basis::BSplineBasis, indices::Integer...)
     for i in indices
         checkbounds(basis, i)
     end
-    bps = breakpoints(basis)
-    km1 = order(basis)-1
-    firstknotindex = max(max(indices...)-km1, firstindex(bps))
-    lastknotindex  = min(min(indices...)+1, lastindex(bps))
-    _intervalindices(bps, firstknotindex:lastknotindex, km1)
+    stripped_knots, offset = strip_knots(knots(basis))
+    firstknotindex = max(max(indices...)-offset, firstindex(stripped_knots))
+    lastknotindex  = min(min(indices...)+order(basis)-offset, lastindex(stripped_knots))
+    _intervalindices(stripped_knots, firstknotindex:lastknotindex, offset)
 end
 
 _intervalindices(vec, indices, offset) = IntervalIndices(vec, indices, offset)
@@ -410,7 +425,7 @@ julia> support(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
 (1.0, 4.0)
 ```
 """
-support(b::BSplineBasis) = (bps = breakpoints(b); (first(bps), last(bps)))
+support(b::BSplineBasis) = (first(knots(b)), last(knots(b)))
 
 """
     bsplines(basis, x; leftknot=intervalindex(basis, x))

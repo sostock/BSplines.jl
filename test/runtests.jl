@@ -127,7 +127,8 @@ end
 
 @testset "intervalindices" begin
     support = [(1, 3:3), (2, 3:4), (3, 3:5), (4, 4:6), (5, 5:7), (6, 6:7), (7, 7:7)]
-    for basis = [BSplineBasis(3, 0:5), BSplineBasis(3, 1//2:1//2:3//1), BSplineBasis(3, 0.0:0.2:1.0)]
+    for basis = [BSplineBasis(3, 0:5), BSplineBasis(3, 1//2:1//2:3//1),
+                 BSplineBasis(3, 0.0:0.2:1.0), BSplineBasis{Vector{Int}}(3, 0:5)]
         @test @inferred(eltype(intervalindices(basis))) === Int
         @test @inferred(eltype(intervalindices(basis))) === Int
         @test collect(intervalindices(basis))      == 3:7
@@ -158,22 +159,25 @@ end
     end
     support = [(1, [4]), (2, [4,5]), (3, [4,5]), (4, [4,5,7]), (5, [5,7,8]),
                (6, [7,8,9]), (7, [7,8,9]), (8, [8,9]), (9, [9])]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]))) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), :)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:9)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:8)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 4:8)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:6)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 5:6)) == [5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:0)) == Int[]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 7:6)) == Int[]
-    for (i, irange) = support
-        @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i:i)) == irange
-        @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i)) == irange
-        for (j, jrange) = support
-            @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i, j)) == irange ∩ jrange
-            for (k, krange) = support
-                @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i, j, k)) == irange ∩ jrange ∩ krange
+    for basis = [BSplineBasis(4, [1,2,3,3,4,5,6]),
+                 BSplineBasis{Vector{Float64}}(4, [1,2,3,3,4,5,6])]
+        @test collect(intervalindices(basis)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, :)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, 1:9)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, 1:8)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, 4:8)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, 1:6)) == [4,5,7,8,9]
+        @test collect(intervalindices(basis, 5:6)) == [5,7,8,9]
+        @test collect(intervalindices(basis, 1:0)) == Int[]
+        @test collect(intervalindices(basis, 7:6)) == Int[]
+        for (i, irange) = support
+            @test collect(intervalindices(basis, i:i)) == irange
+            @test collect(intervalindices(basis, i)) == irange
+            for (j, jrange) = support
+                @test collect(intervalindices(basis, i, j)) == irange ∩ jrange
+                for (k, krange) = support
+                    @test collect(intervalindices(basis, i, j, k)) == irange ∩ jrange ∩ krange
+                end
             end
         end
     end
@@ -213,9 +217,9 @@ end
              BSplineBasis(3, 0//1:1//1:5//1),
              BSplineBasis(3, 0:0.5:5),
              BSplineBasis(4, 0:5),
-             BSplineBasis(3, [1,2,3,3,4,5])]
+             BSplineBasis(3, [0,1,2,3,3,4,5])]
     for b1 = bases, b2 = bases
-        @test (b1 == b2) == (order(b1) == order(b2) && breakpoints(b1) == breakpoints(b2))
+        @test (b1 == b2) == (order(b1) == order(b2) && knots(b1) == knots(b2))
         @test (b1 == b2) == (hash(b1) == hash(b2))
     end
 end
@@ -280,9 +284,9 @@ end
     @testset "Indexing and iteration" begin
         b1 = BSplineBasis(5, 0:5)
         @test collect(b1) == [b1[i] for i=1:9]
-        @test @inferred(first(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
-        @test @inferred(last(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
-        @test @inferred(b1[1]) isa BSpline{BSplineBasis{UnitRange{Int}}}
+        @test @inferred(first(b1)) isa BSpline{BSplineBasis{KnotVector{Int,UnitRange{Int}}}}
+        @test @inferred(last(b1)) isa BSpline{BSplineBasis{KnotVector{Int,UnitRange{Int}}}}
+        @test @inferred(b1[1]) isa BSpline{BSplineBasis{KnotVector{Int,UnitRange{Int}}}}
         @test first(b1) == Spline(b1, [1,0,0,0,0,0,0,0,0])
         @test last(b1) == Spline(b1, [0,0,0,0,0,0,0,0,1])
         @test b1[5] == Spline(b1, [0,0,0,0,1,0,0,0,0])
@@ -291,9 +295,9 @@ end
         @test_throws BoundsError b1[10]
         b2 = BSplineBasis(3, [1,2,3.5,6,10])
         @test collect(b2) == [b2[i] for i=1:6]
-        @test @inferred(first(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
-        @test @inferred(last(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
-        @test @inferred(b2[1]) isa BSpline{BSplineBasis{Vector{Float64}}}
+        @test @inferred(first(b2)) isa BSpline{BSplineBasis{KnotVector{Float64,Vector{Float64}}}}
+        @test @inferred(last(b2)) isa BSpline{BSplineBasis{KnotVector{Float64,Vector{Float64}}}}
+        @test @inferred(b2[1]) isa BSpline{BSplineBasis{KnotVector{Float64,Vector{Float64}}}}
         @test first(b2) == Spline(b2, [1,0,0,0,0,0])
         @test last(b2) == Spline(b2, [0,0,0,0,0,1])
         @test b2[5] == Spline(b2, [0,0,0,0,1,0])
@@ -304,12 +308,17 @@ end
 
     @testset "breakpoints" begin
         @test breakpoints(BSplineBasis(5, 0:5)) == 0:5
-        @test breakpoints(BSplineBasis(3, [1,2,3,4,4,5])) == [1,2,3,4,4,5]
+        bpts1 = [1,2,3,4,5]
+        @test breakpoints(BSplineBasis(3, bpts1)) == bpts1
+        @test breakpoints(BSplineBasis(3, bpts1)) !== bpts1
+        bpts2 = [1,2,3,4,4,5]
+        @test breakpoints(BSplineBasis(3, bpts2)) == bpts1
     end
 
     @testset "knots" begin
-        @test knots(BSplineBasis(3, 0:5)) == [0, 0, 0, 1, 2, 3, 4, 5, 5, 5]
-        @test knots(BSplineBasis(2, [1.5, 4.0])) == [1.5, 1.5, 4.0, 4.0]
+        @test knots(BSplineBasis(3, 0:5)) === KnotVector(0:5, 2)
+        bpts = [1.5, 4.0]
+        @test knots(BSplineBasis(2, bpts)) === KnotVector(bpts, 1)
     end
 
     @testset "order" begin
@@ -320,8 +329,8 @@ end
     end
 
     @testset "Printing" begin
-        @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{UnitRange{$Int}}"
-        @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{$(Vector{Float64})}"
+        @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{KnotVector{$Int,UnitRange{$Int}}}"
+        @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{KnotVector{Float64,$(Vector{Float64})}}"
     end
 end
 
@@ -359,6 +368,7 @@ end
                    BSplineBasis(4, 0:4)[1],
                    BSpline(BSplineBasis(4, 0:4), 1),
                    Spline(BSplineBasis(4, [0,1,2,3,4]), [1,0,0,0,0,0,0]),
+                   Spline(BSplineBasis(4, [0,1,2,2,4]), [1,0,0,0,0,0,0]),
                    BSplineBasis(4, 0:5)[1],
                    BSplineBasis(4, Float64[0:5;])[2]]
         for s1 = splines, s2 = splines
@@ -653,7 +663,7 @@ end
 
 @testset "averagebasis" begin
     ≈ₜₑₛₜ(x::BSplineBasis, y::BSplineBasis; kwargs...) =
-        order(x) == order(y) && isapprox(breakpoints(x), breakpoints(y); kwargs...)
+        order(x) == order(y) && isapprox(knots(x), knots(y); kwargs...)
 
     @test averagebasis(3, [0.0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.0]) ≈ₜₑₛₜ BSplineBasis(3, 0:5)
     @test averagebasis(3, [0//1, 1//2, 3//2, 5//2, 7//2, 9//2, 5//1]) == BSplineBasis(3, 0:5)
