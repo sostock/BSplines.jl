@@ -2,40 +2,61 @@
     BSplineBasis{T<:AbstractVector{<:Real}}
 
 Type for a B-spline basis with knot vector of type `T`.
-
-A B-spline basis is completely specified by its order ``k`` and knot sequence. The
-`BSplineBasis` type supports only knot sequences where the first and the last breakpoint
-each appear ``k`` times. This is ensured by the constructor, which takes a breakpoint
-sequence as argument and duplicates the first and the last breakpoint to create a valid
-knot sequence.
 """
 struct BSplineBasis{T<:AbstractVector{<:Real}}
     order::Int
     knots::T
 
-    function BSplineBasis{T}(order, breakpoints) where T<:AbstractVector{<:Real}
-        order ≥ 1 || throw(DomainError(order, "order of B-splines must be positive."))
-        length(breakpoints) ≥ 2 || throw(ArgumentError("length of breakpoint vector must be at least 2."))
-        has_offset_axes(breakpoints) && throw(ArgumentError("breakpoint vector must not have offset axes."))
-        new(order, KnotVector(breakpoints, order-1))
+    global unsafe_bsplinebasis(T, order, knots) = new{T}(order, knots)
+end
+
+"""
+    BSplineBasis(order; knots)
+    BSplineBasis(order; breakpoints)
+
+Create a B-spline basis with the order `order` and the specified breakpoint or knot
+sequence. The breakpoints or knots are assumed to be sorted.
+
+If the `knots` keyword is used, the specified vector will be used as the knot sequence, no
+copy of it is made.
+
+If the `breakpoints` keyword is used, the knot vector is created from the breakpoint vector
+by duplicating the first and last elements so that they appear `order` times.
+
+# Examples
+
+```jldoctest
+julia> BSplineBasis(3, breakpoints=0:5)
+7-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+ order: 3
+ knots: [0, 0, 0, 1, 2, 3, 4, 5, 5, 5]
+
+julia> BSplineBasis(3, knots=0:5)
+3-element BSplineBasis{UnitRange{Int64}}:
+ order: 3
+ knots: 0:5
+```
+"""
+function BSplineBasis(order::Integer; breakpoints=nothing, knots=nothing)
+    order ≥ 1 || throw(DomainError(order, "order of B-splines must be positive."))
+    if breakpoints == nothing
+        if knots == nothing
+            throw(ArgumentError("Exactly one of `breakpoints` or `knots` must be specified."))
+        end
+        has_offset_axes(knots) && throw(ArgumentError("Knot vector must not have offset axes."))
+        length(knots) > order || throw(ArgumentError("Length of knot vector must be greater than order."))
+    elseif knots == nothing
+        has_offset_axes(breakpoints) && throw(ArgumentError("Breakpoint vector must not have offset axes."))
+        length(breakpoints) < 2 && throw(ArgumentError("Breakpoints must contain at least two values."))
+        knots = @inbounds KnotVector(breakpoints, order-1)
+    else
+        throw(ArgumentError("Too many arguments; pass only one of `breakpoints` or `knots`."))
     end
+    unsafe_bsplinebasis(typeof(knots), order, knots)
 end
 
-"""
-    BSplineBasis(order, breakpoints)
-
-Create a B-spline basis with order `order` and breakpoint vector `breakpoints`. The
-breakpoint vector is assumed to be sorted.
-
-The knot vector is created from the breakpoint vector by duplicating the first and last
-elements so that they appear `order` times. Knot sequences where the first and last
-breakpoints do appear less than `order` times are currently not supported by the
-`BSplineBasis` type.
-"""
-function BSplineBasis(order, breakpoints)
-    T = KnotVector{eltype(breakpoints), typeof(breakpoints)}
-    BSplineBasis{T}(order, breakpoints)
-end
+Base.convert(::Type{BSplineBasis{T}}, basis::BSplineBasis) where T<:AbstractVector{<:Real} =
+    unsafe_bsplinebasis(T, order(basis), knots(basis))
 
 Base.:(==)(x::BSplineBasis, y::BSplineBasis) = order(x) == order(y) && knots(x) == knots(y)
 
@@ -86,7 +107,9 @@ breakpoint vector that was used to create the basis.
 # Examples
 
 ```jldoctest
-julia> breakpoints(BSplineBasis(3, 0:5))
+julia> BSplineBasis(3, breakpoints=0:5);
+
+julia> breakpoints(ans)
 6-element Array{Int64,1}:
  0
  1
@@ -95,7 +118,9 @@ julia> breakpoints(BSplineBasis(3, 0:5))
  4
  5
 
-julia> breakpoints(BSplineBasis(4, [1.0, 2.0, 2.0, 3.0, 4.0]))
+julia> BSplineBasis(4, knots=[1.0, 1.0, 1.0, 2.0, 2.0, 3.0, 4.0, 4.0, 4.0]);
+
+julia> breakpoints(ans)
 4-element Array{Float64,1}:
  1.0
  2.0
@@ -108,12 +133,15 @@ breakpoints(b::BSplineBasis) = unique(knots(b))
 """
     knots(basis::BSplineBasis)
 
-Return the knot sequence of the B-spline basis.
+Return the knot sequence of the B-spline basis. The returned vector is identical (`===`) to
+the one stored in the `BSplineBasis` struct, i.e., no copy is made.
 
 # Examples
 
 ```jldoctest
-julia> knots(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> knots(basis)
 10-element BSplines.KnotVector{Int64,UnitRange{Int64}}:
  0
  0
@@ -138,10 +166,14 @@ Return the order of a spline or a B-spline basis.
 # Examples
 
 ```jldoctest
-julia> order(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> order(basis)
 3
 
-julia> order(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
+julia> basis = BSplineBasis(4, breakpoints=[1.0, 1.5, 2.5, 4.0]);
+
+julia> order(basis)
 4
 ```
 """
@@ -316,22 +348,26 @@ least one* of the B-splines `basis[j] for j=indices` is non-zero.
 # Examples
 
 ```jldoctest
-julia> intervalindices(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> intervalindices(basis)
 3:7
 
-julia> intervalindices(BSplineBasis(3, 0:5), 1:4)
+julia> intervalindices(basis, 1:4)
 3:6
 
-julia> intervalindices(BSplineBasis(4, [1,2,3,4,4,4,5,6]))
-BSplines.IntervalIndices{Array{Int64,1}}([1, 2, 3, 4, 4, 4, 5, 6], 1:8, 3)
+julia> basis = BSplineBasis(4, knots=[1,1,1,2,3,4,4,4,5,6,6,6,6]);
+
+julia> intervalindices(basis)
+BSplines.IntervalIndices{Array{Int64,1}}([1, 1, 1, 2, 3, 4, 4, 4, 5, 6, 6, 6, 6], 1:13, 0)
 
 julia> collect(ans)
 5-element Array{Int64,1}:
-  4
-  5
-  6
-  9
- 10
+ 3
+ 4
+ 5
+ 8
+ 9
 ```
 """
 intervalindices(::BSplineBasis, ::Union{AbstractUnitRange,Colon}=Colon())
@@ -367,25 +403,29 @@ interval.
 # Examples
 
 ```jldoctest
-julia> intervalindices(BSplineBasis(3, 0:5), 3)
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> intervalindices(basis, 3)
 3:5
 
-julia> intervalindices(BSplineBasis(3, 0:5), 4, 5)
+julia> intervalindices(basis, 4, 5)
 5:6
 
-julia> intervalindices(BSplineBasis(3, 0:5), 2, 6) # B-splines do not overlap
+julia> intervalindices(basis, 2, 6) # B-splines do not overlap
 6:5
 
-julia> intervalindices(BSplineBasis(3, 0:5), 3, 5, 4)
+julia> intervalindices(basis, 3, 5, 4)
 5:5
 
-julia> intervalindices(BSplineBasis(4, [1,2,3,4,4,4,5,6]), 3, 5)
-BSplines.IntervalIndices{Array{Int64,1}}([1, 2, 3, 4, 4, 4, 5, 6], 2:4, 3)
+julia> basis = BSplineBasis(4, knots=[1,1,1,2,3,4,4,4,5,6,6,6,6]);
+
+julia> intervalindices(basis, 2, 4)
+BSplines.IntervalIndices{Array{Int64,1}}([1, 1, 1, 2, 3, 4, 4, 4, 5, 6, 6, 6, 6], 4:6, 0)
 
 julia> collect(ans)
 2-element Array{Int64,1}:
+ 4
  5
- 6
 ```
 """
 function intervalindices(basis::BSplineBasis, indices::Integer...)
@@ -418,10 +458,14 @@ and `b` the last breakpoint of the `basis`.
 # Examples
 
 ```jldoctest
-julia> support(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> support(basis)
 (0, 5)
 
-julia> support(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
+julia> basis = BSplineBasis(4, breakpoints=[1.0, 1.5, 2.5, 4.0]);
+
+julia> support(basis)
 (1.0, 4.0)
 ```
 """
@@ -442,16 +486,20 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> bsplines(BSplineBasis(4, 0:5), 2.4)
+julia> basis4 = BSplineBasis(4, breakpoints=0:5);
+
+julia> bsplines(basis4, 2.4)
 4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667 
  0.41466666666666663
  0.01066666666666666
 
-julia> bsplines(BSplineBasis(4, 0:5), 6) # returns nothing
+julia> bsplines(basis4, 6) # returns nothing
 
-julia> bsplines(BSplineBasis(3, 0:5), 17//5, leftknot=6)
+julia> basis3 = BSplineBasis(3, breakpoints=0:5);
+
+julia> bsplines(basis3, 17//5, leftknot=6)
 3-element OffsetArray(::Array{Rational{Int64},1}, 4:6) with eltype Rational{Int64} with indices 4:6:
   9//50
  37//50
@@ -475,15 +523,19 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> bsplines(BSplineBasis(3, 0:5), 2.4, Derivative(1))
+julia> basis3 = BSplineBasis(3, breakpoints=0:5);
+
+julia> bsplines(basis3, 2.4, Derivative(1))
 3-element OffsetArray(::Array{Float64,1}, 3:5) with eltype Float64 with indices 3:5:
  -0.6000000000000001 
   0.20000000000000018
   0.3999999999999999 
 
-julia> bsplines(BSplineBasis(3, 0:5), 6, Derivative(1)) # returns nothing
+julia> bsplines(basis3, 6, Derivative(1)) # returns nothing
 
-julia> bsplines(BSplineBasis(4, 0:5), 17//5, Derivative(2), leftknot=7)
+julia> basis4 = BSplineBasis(4, breakpoints=0:5);
+
+julia> bsplines(basis4, 17//5, Derivative(2), leftknot=7)
 4-element OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
   3//5
  -4//5
@@ -509,15 +561,19 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> bsplines(BSplineBasis(3, 0:5), 2.4, AllDerivatives(3))
+julia> basis3 = BSplineBasis(3, breakpoints=0:5);
+
+julia> bsplines(basis3, 2.4, AllDerivatives(3))
 3×3 OffsetArray(::Array{Float64,2}, 3:5, 0:2) with eltype Float64 with indices 3:5×0:2:
  0.18  -0.6   1.0
  0.74   0.2  -2.0
  0.08   0.4   1.0
 
-julia> bsplines(BSplineBasis(3, 0:5), 6.0, AllDerivatives(3)) # returns nothing
+julia> bsplines(basis3, 6.0, AllDerivatives(3)) # returns nothing
 
-julia> bsplines(BSplineBasis(4, 0:5), 17//5, AllDerivatives(4), leftknot=7)
+julia> basis4 = BSplineBasis(4, breakpoints=0:5);
+
+julia> bsplines(basis4, 17//5, AllDerivatives(4), leftknot=7)
 4×4 OffsetArray(::Array{Rational{Int64},2}, 4:7, 0:3) with eltype Rational{Int64} with indices 4:7×0:3:
    9//250   -9//50   3//5  -1//1
  202//375  -14//25  -4//5   3//1
@@ -543,9 +599,11 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> dest = zeros(4);
+julia> dest = zeros(4); basis = BSplineBasis(4, breakpoints=0:5);
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 2.4)
+julia> bsplines!(dest, basis, 6.0) # returns nothing
+
+julia> bsplines!(dest, basis, 2.4)
 2
 
 julia> dest # dest[i] contains value of (i+2)-th B-spline
@@ -574,11 +632,11 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> dest = zeros(4);
+julia> dest = zeros(4); basis = BSplineBasis(4, breakpoints=0:5);
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 7.0, Derivative(2)) # returns nothing
+julia> bsplines!(dest, basis, 7.0, Derivative(2)) # returns nothing
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 4.2, Derivative(2))
+julia> bsplines!(dest, basis, 4.2, Derivative(2))
 4
 
 julia> dest # dest[i] contains 2nd derivative of (i+4)-th B-spline
@@ -607,11 +665,11 @@ If the index of the relevant interval is already known, it can be supplied with 
 # Examples
 
 ```jldoctest
-julia> dest = zeros(4, 3);
+julia> dest = zeros(4, 3); basis = BSplineBasis(4, breakpoints=0:5);
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), -1.0, AllDerivatives(3)) # returns nothing
+julia> bsplines!(dest, basis, -1.0, AllDerivatives(3)) # returns nothing
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 3.75, AllDerivatives(3))
+julia> bsplines!(dest, basis, 3.75, AllDerivatives(3))
 3
 
 julia> dest # dest[i,m] contains (m-1)-th derivative of (i+3)-th B-spline
@@ -789,7 +847,7 @@ Calculate the matrix `[basis[i](x) for x=xvalues, i=indices]`.
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(3, 0:5);
+julia> basis = BSplineBasis(3, breakpoints=0:5);
 
 julia> x = [0.3, 1.5, 3.2, 4.5];
 
@@ -818,7 +876,7 @@ Calculate the matrix `[basis[i](x) for x=xvalues, i=indices]` and store it in `d
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(3, 0:5);
+julia> basis = BSplineBasis(3, breakpoints=0:5);
 
 julia> x = [0.3, 1.5, 3.2, 4.5];
 

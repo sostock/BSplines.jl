@@ -20,7 +20,7 @@ A `BSplineBasis` is constructed from its order and breakpoint vector.
 The [`order`](@ref) and [`breakpoints`](@ref) functions return these properties.
 The `length` function returns the number of B-splines in the basis:
 ```@repl basis
-basis = BSplineBasis(4, 0:5)
+basis = BSplineBasis(4, breakpoints=0:5)
 order(basis)
 breakpoints(basis)
 length(basis)
@@ -54,7 +54,7 @@ which contains the value of the `i`-th B-spline at the index `i`.
 The array always has the length `order(basis)`:
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 bsplines(basis, 3.2)
 bsplines(basis, 7//3)
 ```
@@ -73,7 +73,7 @@ The `N`-th derivative is specified via an optional third argument of the singlet
 Instead of `Derivative{N}()`, the shorter constructor `Derivative(N)` can be used:
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 bsplines(basis, 7//3, Derivative(1)) # calculate first derivatives of non-zero B-splines
 ```
 
@@ -95,7 +95,7 @@ In the case of `AllDerivatives{N}`, the destination array contains the `j-1`-th 
 If the point `x` is outside of the support of the basis, `nothing` is returned instead and the destination array is not mutated.
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 vec = zeros(4);
 bsplines!(vec, basis, 3.2)
 vec
@@ -126,7 +126,7 @@ However, in many situations it may be desirable to
 In order to have repeated interior knots, it is sufficient to include it in the breakpoint vector multiple times when constructing the basis:
 
 ```@repl basis
-basis = BSplineBasis(3, [1, 2, 3, 4, 5, 5, 6, 7, 8]) # 5 appears twice
+basis = BSplineBasis(3, breakpoints=[1, 2, 3, 4, 5, 5, 6, 7, 8]) # 5 appears twice
 knots(basis)
 ```
 

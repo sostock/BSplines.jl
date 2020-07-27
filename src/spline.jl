@@ -101,7 +101,7 @@ Return the `index`-th B-spline of `basis`. Instead of `BSpline(basis, index)`, t
 # Example
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 1:10);
+julia> basis = BSplineBasis(5, breakpoints=1:10);
 
 julia> BSpline(basis, 3) # or: basis[3]
 BSpline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}}:
@@ -139,7 +139,7 @@ Otherwise, return `support(basis(spline))`.
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(3, 0:5);
+julia> basis = BSplineBasis(3, breakpoints=0:5);
 
 julia> spline = Spline(basis, ones(7));
 
@@ -172,7 +172,7 @@ Instead of calling `splinevalue`, a spline object can be called directly:
 # Examples
 
 ```jldoctest
-julia> spl = Spline(BSplineBasis(4, 0:5), 1:8);
+julia> spl = Spline(BSplineBasis(4, breakpoints=0:5), 1:8);
 
 julia> splinevalue(spl, 1.7)
 3.69775
@@ -204,7 +204,7 @@ Instead of calling `splinevalue`, a spline object can be called directly:
 # Examples
 
 ```jldoctest
-julia> spl = Spline(BSplineBasis(4, 0:5), 1:8);
+julia> spl = Spline(BSplineBasis(4, breakpoints=0:5), 1:8);
 
 julia> splinevalue(spl, 1.7, Derivative(1))
 1.0225

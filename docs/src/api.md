@@ -8,7 +8,7 @@ AllDerivatives(::Integer)
 BSpline
 BSpline{B}(::B, ::Integer) where B<:BSplineBasis
 BSplineBasis
-BSplineBasis(::Any, ::Any)
+BSplineBasis(::Integer; breakpoints, knots)
 Derivative
 Derivative(::Integer)
 Spline

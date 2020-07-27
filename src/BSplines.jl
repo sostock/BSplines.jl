@@ -68,7 +68,7 @@ See also: [`interpolate`](@ref)
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 0:5);
+julia> basis = BSplineBasis(5, breakpoints=0:5);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
 Spline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}},Array{Float64,1}}:
@@ -100,7 +100,7 @@ See also: [`approximate`](@ref)
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 1:10);
+julia> basis = BSplineBasis(5, breakpoints=1:10);
 
 julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
 
@@ -151,7 +151,9 @@ See also: [`knotaverages!`](@ref)
 # Examples
 
 ```jldoctest
-julia> knotaverages(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> knotaverages(basis)
 7-element Array{Float64,1}:
  0.0
  0.5
@@ -161,7 +163,9 @@ julia> knotaverages(BSplineBasis(3, 0:5))
  4.5
  5.0
 
-julia> knotaverages(BSplineBasis(4, [1, 3//2, 5//2, 4]), indices=2:6)
+julia> basis = BSplineBasis(4, breakpoints=[1, 3//2, 5//2, 4]);
+
+julia> knotaverages(basis, indices=2:6)
 5-element Array{Rational{Int64},1}:
  7//6
  5//3
@@ -194,9 +198,11 @@ See also: [`knotaverages`](@ref)
 # Examples
 
 ```jldoctest
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
 julia> dest = Vector{Float64}(undef, 7);
 
-julia> knotaverages!(dest, BSplineBasis(3, 0:5))
+julia> knotaverages!(dest, basis)
 7-element Array{Float64,1}:
  0.0
  0.5
@@ -208,7 +214,7 @@ julia> knotaverages!(dest, BSplineBasis(3, 0:5))
 
 julia> dest = Vector{Rational{Int}}(undef, 5);
 
-julia> knotaverages!(dest, BSplineBasis(3, 0:5), indices=2:6)
+julia> knotaverages!(dest, basis, indices=2:6)
 5-element Array{Rational{Int64},1}:
  1//2
  3//2
@@ -273,7 +279,7 @@ function averagebasis(order::Integer, datapoints::AbstractVector{<:Real})
     if order > length(datapoints)
         throw(ArgumentError("order cannot not be greater than number of datapoints."))
     end
-    BSplineBasis(order, averagebasis_breakpoints(order, datapoints))
+    BSplineBasis(order, breakpoints=averagebasis_breakpoints(order, datapoints))
 end
 
 function averagebasis_breakpoints(k, datapoints)
@@ -286,5 +292,7 @@ function averagebasis_breakpoints(k, datapoints)
     end
     bps
 end
+
+include("deprecated.jl")
 
 end # module BSplines
