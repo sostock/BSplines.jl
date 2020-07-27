@@ -135,7 +135,7 @@ function unique_sorted(x::AbstractVector)
     unique = eltype(x)[]
     sizehint!(unique, length(x))
     isempty(x) && return unique
-    last = @inbounds x[begin]
+    last = @inbounds x[firstindex(x)]
     push!(unique, last)
     for i in firstindex(x)+1:lastindex(x)
         val = @inbounds x[i]
