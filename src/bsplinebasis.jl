@@ -101,8 +101,9 @@ Base.summary(io::IO, basis::BSplineBasis) =
 
 Return the breakpoint sequence of the B-spline basis.
 
-The returned vector contains only unique values. It is *not* identical (`===`) to the
-breakpoint vector that was used to create the basis.
+The returned vector contains only unique values. It is generally not identical (`===`) to
+the breakpoint vector that was used to create the basis (but it might be, e.g., if the
+breakpoint vector is a range).
 
 # Examples
 
@@ -110,13 +111,7 @@ breakpoint vector that was used to create the basis.
 julia> BSplineBasis(3, breakpoints=0:5);
 
 julia> breakpoints(ans)
-6-element Array{Int64,1}:
- 0
- 1
- 2
- 3
- 4
- 5
+0:5
 
 julia> BSplineBasis(4, knots=[1.0, 1.0, 1.0, 2.0, 2.0, 3.0, 4.0, 4.0, 4.0]);
 
