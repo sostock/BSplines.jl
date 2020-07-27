@@ -343,16 +343,24 @@ end
     end
 
     @testset "breakpoints" begin
-        @test breakpoints(BSplineBasis(5, breakpoints=0:5)) == 0:5
-        @test breakpoints(BSplineBasis(5, knots=0:5)) == 0:5
+        for r in (Base.OneTo(6), 0:5, 0.0:0.5:5.0, range(0.0, stop=5.0, step=1), LinRange(0, 5, 6))
+            @test breakpoints(BSplineBasis(3, breakpoints=r)) === r
+            @test breakpoints(BSplineBasis(3, knots=r)) === r
+        end
+        bpts0  = range(0.0, stop=0.0, length=5) # not a useful breakpoint sequence
+        @test breakpoints(BSplineBasis(3, breakpoints=bpts0)) === bpts0[1:1]
+        @test breakpoints(BSplineBasis(3, knots=bpts0)) === bpts0[1:1]
+        @test breakpoints(BSplineBasis(3, breakpoints=LinRange(bpts0))) === LinRange(bpts0[1:1])
+        @test breakpoints(BSplineBasis(3, knots=LinRange(bpts0))) === LinRange(bpts0[1:1])
         bpts1 = [1,2,3,4,5]
         @test breakpoints(BSplineBasis(3, breakpoints=bpts1)) == bpts1
-        @test breakpoints(BSplineBasis(3, breakpoints=bpts1)) !== bpts1
         @test breakpoints(BSplineBasis(3, knots=bpts1)) == bpts1
-        @test breakpoints(BSplineBasis(3, knots=bpts1)) !== bpts1
         bpts2 = [1,2,3,4,4,5]
         @test breakpoints(BSplineBasis(3, breakpoints=bpts2)) == bpts1
         @test breakpoints(BSplineBasis(3, knots=bpts2)) == bpts1
+        bpts3 = [1,1,1,2,2,2,3,4,4,5,5,5,5]
+        @test breakpoints(BSplineBasis(3, breakpoints=bpts3)) == bpts1
+        @test breakpoints(BSplineBasis(3, knots=bpts3)) == bpts1
     end
 
     @testset "knots" begin

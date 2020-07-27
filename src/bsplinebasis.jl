@@ -128,7 +128,32 @@ julia> breakpoints(ans)
  4.0
 ```
 """
-breakpoints(b::BSplineBasis) = unique(knots(b))
+breakpoints(b::BSplineBasis) = unique_sorted(knots(b))
+
+"""
+    unique_sorted(vec)
+
+Return a vector that is equal to `unique(vec)` under the assumption that `vec` is sorted. If
+`vec` is a range, return a range of the same type. (not exported)
+"""
+function unique_sorted(x::AbstractVector)
+    unique = eltype(x)[]
+    sizehint!(unique, length(x))
+    isempty(x) && return unique
+    last = @inbounds x[begin]
+    push!(unique, last)
+    for i in firstindex(x)+1:lastindex(x)
+        val = @inbounds x[i]
+        if val != last
+            push!(unique, val)
+            last = val
+        end
+    end
+    unique
+end
+unique_sorted(x::AbstractRange) = iszero(step(x)) ? oftype(x, x[1:1]) : x
+unique_sorted(x::OrdinalRange) = x
+unique_sorted(x::KnotVector) = unique_sorted(parent(x))
 
 """
     knots(basis::BSplineBasis)
