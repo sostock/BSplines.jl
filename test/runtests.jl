@@ -343,7 +343,7 @@ end
 
         # Indexing with UnitRange
         @test b1[:] == b1
-        @test b1[begin:end] == b1
+        @test b1[1:end] == b1
         @test b1[Base.OneTo(5)] == BSplineBasis(5, knots=[0,0,0,0,0,1,2,3,4,5])
         @test b1[3:6] == BSplineBasis(5, knots=[0,0,0,1,2,3,4,5,5])
         @test b1[end-1:end] == BSplineBasis(5, knots=[3,4,5,5,5,5,5])
@@ -353,9 +353,9 @@ end
         @test_throws ArgumentError b1[3:2]
         @test b2[:] == b2
         @test b2[:] !== b2
-        @test b2[begin:end] == b2
-        @test b2[begin:end] !== b2
-        @test b2[begin+1:end-1] == b2[2:2] == BSplineBasis(3, knots=[2, 3.5, 6, 10])
+        @test b2[1:end] == b2
+        @test b2[1:end] !== b2
+        @test b2[1+1:end-1] == b2[2:2] == BSplineBasis(3, knots=[2, 3.5, 6, 10])
         @test_throws BoundsError b2[0:1]
         @test_throws BoundsError b2[1:end+1]
         @test_throws ArgumentError b2[2:1]
