@@ -340,6 +340,41 @@ end
         @test b2[end] == Spline(b2, [0,0,1])
         @test_throws BoundsError b2[0]
         @test_throws BoundsError b2[4]
+
+        # Indexing with UnitRange
+        @test b1[:] == b1
+        @test b1[begin:end] == b1
+        @test b1[Base.OneTo(5)] == BSplineBasis(5, knots=[0,0,0,0,0,1,2,3,4,5])
+        @test b1[3:6] == BSplineBasis(5, knots=[0,0,0,1,2,3,4,5,5])
+        @test b1[end-1:end] == BSplineBasis(5, knots=[3,4,5,5,5,5,5])
+        @test b1[2:2] == BSplineBasis(5, knots=[0,0,0,0,1,2])
+        @test_throws BoundsError b1[0:1]
+        @test_throws BoundsError b1[1:end+1]
+        @test_throws ArgumentError b1[3:2]
+        @test b2[:] == b2
+        @test b2[:] !== b2
+        @test b2[begin:end] == b2
+        @test b2[begin:end] !== b2
+        @test b2[begin+1:end-1] == b2[2:2] == BSplineBasis(3, knots=[2, 3.5, 6, 10])
+        @test_throws BoundsError b2[0:1]
+        @test_throws BoundsError b2[1:end+1]
+        @test_throws ArgumentError b2[2:1]
+
+        # view
+        @test view(b1, :) === BSplineBasis(5, knots=view(knots(b1),:))
+        @test view(b1, 1:9) === BSplineBasis(5, knots=view(knots(b1),1:14))
+        @test view(b1, Base.OneTo(5)) === BSplineBasis(5, knots=view(knots(b1),1:10))
+        @test view(b1, 3:6) === BSplineBasis(5, knots=view(knots(b1),3:11))
+        @test view(b1, 2:2) === BSplineBasis(5, knots=view(knots(b1),2:7))
+        @test_throws BoundsError view(b1, 0:1)
+        @test_throws BoundsError view(b1, 1:10)
+        @test_throws ArgumentError view(b1, 3:2)
+        @test view(b2, :) === BSplineBasis(3, knots=view(knots(b2),:))
+        @test view(b2, 1:3) === BSplineBasis(3, knots=view(knots(b2),1:6))
+        @test view(b2, 2:2) === BSplineBasis(3, knots=view(knots(b2),2:5))
+        @test_throws BoundsError view(b2, 0:1)
+        @test_throws BoundsError view(b2, 1:4)
+        @test_throws ArgumentError view(b2, 2:1)
     end
 
     @testset "breakpoints" begin

@@ -37,3 +37,9 @@ order
 splinevalue
 support
 ```
+
+## Extended `Base` functions
+
+```@docs
+Base.view(::BSplineBasis, ::AbstractUnitRange)
+```

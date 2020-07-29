@@ -87,6 +87,45 @@ Base.keys(b::BSplineBasis) = eachindex(b)
     @inbounds BSpline(b, i)
 end
 
+"""
+    view(basis::BSplineBasis, indices::AbstractUnitRange) -> BSplineBasis
+
+Create a `BSplineBasis` that contains the B-splines of `basis` with the specified `indices`
+and whose knot vector is a `view` of the knot vector of `basis`.
+
+```jldoctest
+julia> basis = BSplineBasis(4, breakpoints=0:5)
+8-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+ order: 4
+ knots: [0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 5, 5]
+
+julia> view(basis, 3:7)
+5-element BSplineBasis{SubArray{Int64,1,BSplines.KnotVector{Int64,UnitRange{Int64}},Tuple{UnitRange{Int64}},true}}:
+ order: 4
+ knots: [0, 0, 1, 2, 3, 4, 5, 5, 5]
+
+julia> parent(knots(ans)) === knots(basis)
+true
+```
+"""
+Base.view(::BSplineBasis, ::AbstractUnitRange)
+
+for f = (:getindex, :view)
+    # TODO warn in the documentation that @inbounds also elides check whether range is empty
+    @eval @propagate_inbounds function Base.$f(b::BSplineBasis, r::AbstractUnitRange)
+        @boundscheck begin
+            checkbounds(b, r)
+            isempty(r) && throw(ArgumentError("Cannot create empty BSplineBasis."))
+        end
+        newknots = @inbounds $f(knots(b), first(r):last(r)+order(b))
+        unsafe_bsplinebasis(typeof(newknots), order(b), newknots)
+    end
+    @eval function Base.$f(b::BSplineBasis, ::Colon)
+        newknots = $f(knots(b), :)
+        unsafe_bsplinebasis(typeof(newknots), order(b), newknots)
+    end
+end
+
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')
     println(io, " order: ", order(basis))
