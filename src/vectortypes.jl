@@ -56,10 +56,13 @@ julia> BSplines.KnotVector(["first", "second", "last"], 2, 3)
     @boundscheck checkbounds(p, i)
     @inbounds parent(p)[clamp(i-p.front, 1, length(parent(p)))]
 end
+Base.getindex(p::KnotVector, ::Colon) = copy(p)
 
 Base.IndexStyle(p::KnotVector) = IndexLinear()
 Base.parent(p::KnotVector) = p.parent
 Base.size(p::KnotVector) = (length(parent(p)) + p.front + p.back,)
+
+Base.copy(p::KnotVector) = @inbounds KnotVector(copy(parent(p)), p.front, p.back)
 
 Base.first(p::KnotVector) = @inbounds first(parent(p))
 Base.last(p::KnotVector) = @inbounds last(parent(p))
@@ -126,10 +129,13 @@ julia> BSplines.StandardBasisVector(Float64, 6, 2)
 
 Base.size(A::StandardBasisVector) = (A.length,)
 
+Base.copy(A::StandardBasisVector) = A
+
 @inline @propagate_inbounds function Base.getindex(A::StandardBasisVector, i::Int)
     @boundscheck checkbounds(A, i)
     convert(eltype(A), i == A.index)
 end
+Base.getindex(A::StandardBasisVector, ::Colon) = A
 
 Base.:(==)(x::StandardBasisVector, y::StandardBasisVector) =
     (x.length == y.length) & (x.index == y.index)

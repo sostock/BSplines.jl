@@ -22,6 +22,14 @@
         @test_throws ArgumentError KnotVector(OffsetArray(1:5, 1), 2)
     end
 
+    @testset "copy" begin
+        @test copy(KnotVector(1:5, 2)) === KnotVector(1:5, 2)
+        a = KnotVector([1,2,3], 1, 2)
+        @test a == copy(a)
+        @test a !== copy(a)
+        @test typeof(a) === typeof(copy(a))
+    end
+
     @testset "Dimensions" begin
         @test axes(KnotVector(1:5, 3)) == (1:11,)
         @test axes(KnotVector(1:5, 3), 1) == 1:11
@@ -65,7 +73,7 @@
         @test first(KnotVector([1.0, 4.0], 2, 1)) == 1.0
         @test last(KnotVector(1:5, 3)) == 5
         @test last(KnotVector([1.0, 4.0], 2, 1)) == 4.0
-        @test KnotVector(1:5, 3)[:] == [1, 1, 1, 1, 2, 3, 4, 5, 5, 5, 5]
+        @test KnotVector(1:5, 3)[:] === KnotVector(1:5, 3)
         @test KnotVector(1:5, 3)[1] == 1
         @test KnotVector(1:5, 3)[5] == 2
         @test KnotVector(1:5, 3)[end] == 5
@@ -77,7 +85,10 @@
         @test_throws BoundsError KnotVector(1:5, 3)[1,2]
         @test_throws BoundsError KnotVector(1:5, 3)[1:5,2]
         @test_throws BoundsError KnotVector(1:5, 3)[1:20,1]
-        @test KnotVector([1.0, 4.0], 2, 1)[:] == [1.0, 1.0, 1.0, 4.0, 4.0]
+        @test KnotVector([1.0, 4.0], 2, 1)[:] == KnotVector([1.0, 4.0], 2, 1)
+        @test KnotVector([1.0, 4.0], 2, 1)[:] !== KnotVector([1.0, 4.0], 2, 1)
+        @test parent(KnotVector([1.0, 4.0], 2, 1)[:]) == parent(KnotVector([1.0, 4.0], 2, 1))
+        @test typeof(KnotVector([1.0, 4.0], 2, 1)[:]) === typeof(KnotVector([1.0, 4.0], 2, 1))
         @test KnotVector([1.0, 4.0], 2, 1)[1] == 1.0
         @test KnotVector([1.0, 4.0], 2, 1)[4] == 4.0
         @test KnotVector([1.0, 4.0], 2, 1)[end] == 4.0
