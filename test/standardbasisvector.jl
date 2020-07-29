@@ -18,6 +18,11 @@
         end
     end
 
+    @testset "copy" begin
+        @test copy(StandardBasisVector(5, 2)) === StandardBasisVector(5, 2)
+        @test copy(StandardBasisVector(Float64, 5, 2)) === StandardBasisVector(Float64, 5, 2)
+    end
+
     @testset "Dimensions" begin
         @test axes(StandardBasisVector(10, 3)) == (1:10,)
         @test axes(StandardBasisVector(10, 3), 1) == 1:10
@@ -51,7 +56,7 @@
             @eval @test first(StandardBasisVector($T, 6, 1)) == 1
             @eval @test last(StandardBasisVector($T, 6, 3)) == 0
             @eval @test last(StandardBasisVector($T, 6, 6)) == 1
-            @eval @test StandardBasisVector($T, 6, 5)[:] == [0,0,0,0,1,0]
+            @eval @test StandardBasisVector($T, 6, 5)[:] === StandardBasisVector($T, 6, 5)
             @eval @test StandardBasisVector($T, 6, 5)[1] == 0
             @eval @test StandardBasisVector($T, 6, 5)[5] == 1
             @eval @test StandardBasisVector($T, 6, 5)[end] == 0
