@@ -90,8 +90,9 @@ end
 """
     view(basis::BSplineBasis, indices::AbstractUnitRange) -> BSplineBasis
 
-Create a `BSplineBasis` that contains the B-splines of `basis` with the specified `indices`
-and whose knot vector is a `view` of the knot vector of `basis`.
+Create a `BSplineBasis` that is equal to `basis[indices]`, i.e., it contains the B-splines
+of `basis` with the specified `indices`, and whose knot vector is a `view` of the knot
+vector of `basis`.
 
 ```jldoctest
 julia> basis = BSplineBasis(4, breakpoints=0:5)
@@ -111,12 +112,9 @@ true
 Base.view(::BSplineBasis, ::AbstractUnitRange)
 
 for f = (:getindex, :view)
-    # TODO warn in the documentation that @inbounds also elides check whether range is empty
     @eval @propagate_inbounds function Base.$f(b::BSplineBasis, r::AbstractUnitRange)
-        @boundscheck begin
-            checkbounds(b, r)
-            isempty(r) && throw(ArgumentError("Cannot create empty BSplineBasis."))
-        end
+        @boundscheck checkbounds(b, r)
+        isempty(r) && throw(ArgumentError("Cannot create empty BSplineBasis."))
         newknots = @inbounds $f(knots(b), first(r):last(r)+order(b))
         unsafe_bsplinebasis(typeof(newknots), order(b), newknots)
     end
@@ -185,8 +183,7 @@ function unique_sorted(x::AbstractVector)
     end
     unique
 end
-unique_sorted(x::AbstractRange) = iszero(step(x)) ? oftype(x, x[1:1]) : x
-unique_sorted(x::OrdinalRange) = x
+unique_sorted(x::AbstractRange) = allunique(x) ? x : oftype(x, x[1:1])
 unique_sorted(x::KnotVector) = unique_sorted(parent(x))
 
 """
