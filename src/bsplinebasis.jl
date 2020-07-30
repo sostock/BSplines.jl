@@ -847,7 +847,6 @@ end
     else
         # Calculate B-splines of order k-N and store them in dest[N+1:k]
         col = @view dest[N+1:k]
-        # col = uview(dest, N+1:k)
         col[1] = one(eltype(dest))
         for j = 1:k-N-1
             iterate_bsplines!(col, col, t, j, xtyped, leftknot)
