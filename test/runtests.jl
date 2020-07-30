@@ -382,7 +382,7 @@ end
             @test breakpoints(BSplineBasis(3, breakpoints=r)) === r
             @test breakpoints(BSplineBasis(3, knots=r)) === r
         end
-        bpts0  = range(0.0, stop=0.0, length=5) # not a useful breakpoint sequence
+        bpts0 = range(0.0, stop=0.0, length=5) # not a useful breakpoint sequence
         @test breakpoints(BSplineBasis(3, breakpoints=bpts0)) === bpts0[1:1]
         @test breakpoints(BSplineBasis(3, knots=bpts0)) === bpts0[1:1]
         @test breakpoints(BSplineBasis(3, breakpoints=LinRange(bpts0))) === LinRange(bpts0[1:1])
