@@ -743,11 +743,23 @@ function bsplines(basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervali
     leftknot === nothing && return nothing
     dest = bsplines_destarray(basis, x, drv)
     offset = @inbounds _bsplines!(dest, basis, x, leftknot, drv)
-    bsplines_offsetarray(dest, offset, drv)
+    bsplines_offsetarray(dest, basis, leftknot, offset, drv)
 end
 
-bsplines_offsetarray(arr, offset, ::Derivative)     = OffsetArray(arr, offset)
-bsplines_offsetarray(arr, offset, ::AllDerivatives) = OffsetArray(arr, offset, -1)
+function bsplines_offsetarray(arr, basis, leftknot, offset, ::Derivative)
+    arrinds, newoffset = bsplines_indices_offset(basis, leftknot, offset)
+    OffsetArray(arr[arrinds], newoffset)
+end
+function bsplines_offsetarray(arr, basis, leftknot, offset, ::AllDerivatives)
+    arrinds, newoffset = bsplines_indices_offset(basis, leftknot, offset)
+    OffsetArray(arr[arrinds,:], newoffset, -1)
+end
+
+function bsplines_indices_offset(basis, leftknot, offset)
+    minind = max(1, leftknot-order(basis)+1)
+    maxind = min(leftknot, length(basis))
+    minind-offset:maxind-offset, minind-1
+end
 
 function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervalindex(basis, x))
     check_intervalindex(basis, x, leftknot)
