@@ -231,8 +231,9 @@ end
     end
 
     @testset "Dimensions" begin
-        @test length(BSplineBasis(3, 0:5)) == 7
-        @test length(BSplineBasis(5, [1,2,3.5,6,10])) == 8
+        @test length(BSplineBasis(3, 0:5)) === 7
+        @test length(BSplineBasis(3, big(0):big(5))) === 7
+        @test length(BSplineBasis(5, [1,2,3.5,6,10])) === 8
     end
 
     @testset "Indices" begin
