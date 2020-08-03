@@ -1,6 +1,6 @@
 # BSplines.jl changelog
 
-## master
+## v0.2.5
 
 * ![Enhancement](https://img.shields.io/badge/-enhancement-blue) `length(::BSplineBasis)` now always returns a value of type `Int`. ([#7](https://github.com/sostock/BSplines.jl/pull/7))
 
