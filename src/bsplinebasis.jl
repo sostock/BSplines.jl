@@ -44,7 +44,7 @@ Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
 Base.eltype(b::BSplineBasis) = BSpline{typeof(b)}
 
-Base.length(b::BSplineBasis) = length(breakpoints(b)) + order(b) - 2
+Base.length(b::BSplineBasis) = Int(length(breakpoints(b))) + order(b) - 2
 
 Base.iterate(b::BSplineBasis, i=1) = i-1 < length(b) ? (@inbounds b[i], i+1) : nothing
 

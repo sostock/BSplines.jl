@@ -1,5 +1,9 @@
 # BSplines.jl changelog
 
+## master
+
+* ![Enhancement](https://img.shields.io/badge/-enhancement-blue) `length(::BSplineBasis)` now always returns a value of type `Int`.
+
 ## v0.2.4
 
 * ![Maintenance](https://img.shields.io/badge/-maintenance-grey) Fixed the tests on Julia ≥ 1.6.
