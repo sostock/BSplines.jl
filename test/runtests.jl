@@ -385,8 +385,13 @@ end
             @test breakpoints(BSplineBasis(3, knots=r)) === r
         end
         bpts0 = range(0.0, stop=0.0, length=5) # not a useful breakpoint sequence
-        @test breakpoints(BSplineBasis(3, breakpoints=bpts0)) === bpts0[1:1]
-        @test breakpoints(BSplineBasis(3, knots=bpts0)) === bpts0[1:1]
+        @static if VERSION == v"1.5.0"
+            @test_broken breakpoints(BSplineBasis(3, breakpoints=bpts0)) === bpts0[1:1]
+            @test_broken breakpoints(BSplineBasis(3, knots=bpts0)) === bpts0[1:1]
+        else
+            @test breakpoints(BSplineBasis(3, breakpoints=bpts0)) === bpts0[1:1]
+            @test breakpoints(BSplineBasis(3, knots=bpts0)) === bpts0[1:1]
+        end
         @test breakpoints(BSplineBasis(3, breakpoints=LinRange(bpts0))) === LinRange(bpts0[1:1])
         @test breakpoints(BSplineBasis(3, knots=LinRange(bpts0))) === LinRange(bpts0[1:1])
         bpts1 = [1,2,3,4,5]
