@@ -261,10 +261,12 @@ end
     end
 
     @testset "Dimensions" begin
-        @test length(BSplineBasis(3, breakpoints=0:5)) == 7
-        @test length(BSplineBasis(5, breakpoints=[1,2,3.5,6,10])) == 8
-        @test length(BSplineBasis(3, knots=0:5)) == 3
-        @test length(BSplineBasis(4, knots=[1,2,3.5,6,10])) == 1
+        @test length(BSplineBasis(3, breakpoints=0:5)) === 7
+        @test length(BSplineBasis(3, breakpoints=big(0):big(5))) === 7
+        @test length(BSplineBasis(5, breakpoints=[1,2,3.5,6,10])) === 8
+        @test length(BSplineBasis(3, knots=0:5)) === 3
+        @test length(BSplineBasis(3, knots=big(0):big(5))) === 3
+        @test length(BSplineBasis(4, knots=[1,2,3.5,6,10])) === 1
     end
 
     @testset "Indices" begin
