@@ -32,8 +32,10 @@ function Base.show(io::IO, ::MIME"text/plain", s::Spline)
     summary(io, s); println(io, ':')
     print(io, " basis: "); summary(io, basis(s)); println(io, ':')
     println(io, "  order: ", order(basis(s)))
-    println(io, "  breakpoints: ", breakpoints(basis(s)))
-    print(io, " coeffs: ", coeffs(s))
+    print(io, "  breakpoints: ")
+    show(IOContext(io, :compact=>true), breakpoints(basis(s)))
+    print(io, "\n coeffs: ")
+    show(IOContext(io, :compact=>true), coeffs(s))
 end
 
 # Splines act as scalars for broadcasting

@@ -323,6 +323,18 @@ end
     @testset "Printing" begin
         @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{UnitRange{$Int}}"
         @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{$(Vector{Float64})}"
+        @test repr(MIME"text/plain"(), BSplineBasis(5, [1,π])) ==
+            """
+            5-element BSplineBasis{$(Vector{Float64})}:
+             order: 5
+             breakpoints: [1.0, 3.14159]"""
+        @test repr(MIME"text/plain"(), Spline(BSplineBasis(5, [1,π]), sqrt.(0:4))) ==
+            """
+            Spline{BSplineBasis{$(Vector{Float64})},$(Vector{Float64})}:
+             basis: 5-element BSplineBasis{$(Vector{Float64})}:
+              order: 5
+              breakpoints: [1.0, 3.14159]
+             coeffs: [0.0, 1.0, 1.41421, 1.73205, 2.0]"""
     end
 end
 
