@@ -448,7 +448,7 @@ bsplines(basis, x; kwargs...)
 """
     bsplines(basis, x, ::Derivative{N}; leftknot=intervalindex(basis, x))
 
-Calculate the `N`-th derivatives of all B-splines of `basis` that are non-zero at `x`.
+Calculate the `N`-th derivatives of all non-zero B-splines of `basis` at `x`.
 
 If any B-splines are non-zero at `x`, an `OffsetVector` is returned that contains the `N`-th
 derivative of the `i`-th B-spline at the index `i`. If no B-splines are non-zero at `x`,
@@ -481,8 +481,7 @@ bsplines(basis, x, ::Derivative; kwargs...)
 """
     bsplines(basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
 
-Calculate all `m`-th derivatives (`0 ≤ m < N`) of all B-splines of `basis` that are non-zero
-at `x`.
+Calculate all `m`-th derivatives (`0 ≤ m < N`) of all non-zero B-splines of `basis` at `x`.
 
 If any B-splines are non-zero at `x`, an `OffsetMatrix` is returned that contains the `m`-th
 derivative of the `i`-th B-spline at the index `i, m`. If no B-splines are non-zero at `x`,
@@ -513,14 +512,14 @@ julia> bsplines(BSplineBasis(4, 0:5), 17//5, AllDerivatives(4), leftknot=7)
 bsplines(basis, x, ::AllDerivatives; kwargs...)
 
 """
-    bsplines!(dest, basis, x; leftknot=intervalindex(basis, x)) -> offset
+    bsplines!(dest, basis, x; leftknot=intervalindex(basis, x))
 
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination vector `dest` must have the length `order(basis)`.
+Calculate the values of all non-zero B-splines of `basis` at `x` in-place (i.e., in `dest`).
+The destination vector `dest` must have the length `order(basis)`.
 
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the value of the
-`i`-th B-spline is written to `dest[i-offset]`. If no B-splines are non-zero at `x`,
-`nothing` is returned and `dest` is not mutated.
+If any B-splines are non-zero at `x`, an `OffsetVector` is returned that wraps `dest` and
+contains the value of the `i`-th B-spline at the index `i`. If no B-splines are non-zero at
+`x`, `nothing` is returned and `dest` is not mutated.
 
 If the index of the relevant interval is already known, it can be supplied with the optional
 `leftknot` keyword to speed up the calculation.
@@ -531,14 +530,14 @@ If the index of the relevant interval is already known, it can be supplied with 
 julia> dest = zeros(4);
 
 julia> bsplines!(dest, BSplineBasis(4, 0:5), 2.4)
-2
-
-julia> dest # dest[i] contains value of (i+2)-th B-spline
-4-element Array{Float64,1}:
+4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
- 0.5386666666666667 
+ 0.5386666666666667
  0.41466666666666663
  0.01066666666666666
+
+julia> parent(ans) === dest
+true
 ```
 """
 bsplines!(dest, basis, x; kwargs...)
@@ -546,11 +545,11 @@ bsplines!(dest, basis, x; kwargs...)
 """
     bsplines!(dest, basis, x, ::Derivative{N}; leftknot=intervalindex(basis, x))
 
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination vector `dest` must have the length `order(basis)`.
+Calculate the `N`-th derivatives of all non-zero B-splines of `basis` at `x` in-place (i.e.,
+in `dest`). The destination vector `dest` must have the length `order(basis)`.
 
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the `N`-th
-derivative of the `i`-th B-spline is written to `dest[i-offset]`. If no B-splines are
+If any B-splines are non-zero at `x`, an `OffsetVector` is returned that wraps `dest` and
+contains the `N`-th derivative of the `i`-th B-spline at the index `i`. If no B-splines are
 non-zero at `x`, `nothing` is returned and `dest` is not mutated.
 
 If the index of the relevant interval is already known, it can be supplied with the optional
@@ -564,14 +563,14 @@ julia> dest = zeros(4);
 julia> bsplines!(dest, BSplineBasis(4, 0:5), 7.0, Derivative(2)) # returns nothing
 
 julia> bsplines!(dest, BSplineBasis(4, 0:5), 4.2, Derivative(2))
-4
-
-julia> dest # dest[i] contains 2nd derivative of (i+4)-th B-spline
-4-element Array{Float64,1}:
+4-element OffsetArray(::Array{Float64,1}, 5:8) with eltype Float64 with indices 5:8:
   0.7999999999999998
- -1.399999999999999 
+ -1.399999999999999
  -0.6000000000000019
-  1.200000000000001 
+  1.200000000000001
+
+julia> parent(ans) === dest
+true
 ```
 """
 bsplines!(dest, basis, x, ::Derivative; kwargs...)
@@ -579,12 +578,13 @@ bsplines!(dest, basis, x, ::Derivative; kwargs...)
 """
     bsplines!(dest, basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
 
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination matrix `dest` must have the dimensions `order(basis)`×`N`.
+Calculate all `m`-th derivatives (`0 ≤ m < N`) of all non-zero B-splines of `basis` at `x`
+in-place (i.e., in `dest`). The destination matrix `dest` must have the size
+`(order(basis), N)`.
 
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the `m`-th
-derivative of the `i`-th B-spline is written to `dest[i-offset, m+1]`. If no B-splines are
-non-zero at `x`, `nothing` is returned and `dest` is not mutated.
+If any B-splines are non-zero at `x`, an `OffsetArray` is returned that wraps `dest` and
+contains the `m`-th derivative of the `i`-th B-spline at the index `i, m`. If no B-splines
+are non-zero at `x`, `nothing` is returned and `dest` is not mutated.
 
 If the index of the relevant interval is already known, it can be supplied with the optional
 `leftknot` keyword to speed up the calculation.
@@ -597,14 +597,14 @@ julia> dest = zeros(4, 3);
 julia> bsplines!(dest, BSplineBasis(4, 0:5), -1.0, AllDerivatives(3)) # returns nothing
 
 julia> bsplines!(dest, BSplineBasis(4, 0:5), 3.75, AllDerivatives(3))
-3
-
-julia> dest # dest[i,m] contains (m-1)-th derivative of (i+3)-th B-spline
-4×3 Array{Float64,2}:
- 0.00260417  -0.03125    0.25 
- 0.315104    -0.65625    0.25 
+4×3 OffsetArray(::Array{Float64,2}, 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
+ 0.00260417  -0.03125    0.25
+ 0.315104    -0.65625    0.25
  0.576823     0.265625  -1.625
  0.105469     0.421875   1.125
+
+julia> parent(ans) === dest
+true
 ```
 """
 bsplines!(dest, basis, x, ::AllDerivatives; kwargs...)
@@ -624,7 +624,8 @@ function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative(); leftknot=in
     check_intervalindex(basis, x, leftknot)
     leftknot === nothing && return nothing
     check_destarray_axes(dest, basis, drv)
-    @inbounds _bsplines!(dest, basis, x, leftknot, drv)
+    offset = @inbounds _bsplines!(dest, basis, x, leftknot, drv)
+    bsplines_offsetarray(dest, offset, drv)
 end
 
 bsplines_destarray(basis, x, ::Derivative) =
@@ -835,10 +836,9 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, indices::A
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
-        bindices = boffset .+ axes(workspace, 1)
-        for bindex = bindices ∩ indices
-            dest[xindex, bindex-indicesoffset] = workspace[bindex-boffset]
+        bspl = bsplines!(workspace, basis, x, leftknot=leftknot)
+        for index = axes(bspl, 1) ∩ indices
+            dest[xindex, index-indicesoffset] = bspl[index]
         end
     end
 end
@@ -849,9 +849,9 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, ::Colon)
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
-        for index = axes(workspace, 1)
-            dest[xindex, index+boffset] = workspace[index]
+        bspl = bsplines!(workspace, basis, x, leftknot=leftknot)
+        for index = axes(bspl, 1)
+            dest[xindex, index] = bspl[index]
         end
     end
 end
