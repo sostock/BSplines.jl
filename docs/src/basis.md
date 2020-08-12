@@ -88,27 +88,23 @@ bsplines(basis, 4, AllDerivatives(3)) # calculate zeroth, first and second deriv
 ### Pre-allocating output arrays
 
 The `bsplines` function allocates a new array to return the values (except when it returns `nothing`).
-In order to write the values to a pre-allocated array instead, the [`bsplines!`](@ref) function can be used.
-
-The `bsplines!` function returns an integer `offset` such that the `i`-th element of the destination array contains the value (or derivative) of the `i+offset`-th B-spline.
-In the case of `AllDerivatives{N}`, the destination array contains the `j-1`-th derivative of the `i+offset`-th B-spline at the index `i, j`.
-If the point `x` is outside of the support of the basis, `nothing` is returned instead and the destination array is not mutated.
+In order to use a pre-allocated array instead, the [`bsplines!`](@ref) function can be used: `bsplines!(dest, args...)` behaves like `bsplines(args...)`, but the calculations are done in `dest` and the returned `OffsetArray` is a wrapper around `dest`.
 
 ```@repl basis
 basis = BSplineBasis(4, 0:5);
-vec = zeros(4);
-bsplines!(vec, basis, 3.2)
-vec
-bsplines!(vec, basis, 7//3, Derivative(2))
-vec
-mat = zeros(Rational{Int}, 4, 2);
-bsplines!(mat, basis, 4, AllDerivatives(2))
-mat
+destvec = zeros(4);
+bsplines!(destvec, basis, 3.2)
+parent(ans) === destvec
+bsplines!(destvec, basis, 7//3, Derivative(2))
+parent(ans) === destvec
+destmat = zeros(Rational{Int}, 4, 2);
+bsplines!(destmat, basis, 4, AllDerivatives(2))
+parent(ans) === destmat
 ```
 
-When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, the destination must be a vector of length `order(basis)`.
-In the case of the `AllDerivatives{N}` argument, the destination must be a matrix of size `(order(basis), N)`.
-In any case, the destination array must not have offset axes.
+When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, `dest` must be a vector of length `order(basis)`.
+In the case of the `AllDerivatives{N}` argument, it must be a matrix of size `(order(basis), N)`.
+In any case, `dest` must not have offset axes itself.
 
 ### Specifying the relevant interval
 

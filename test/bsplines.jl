@@ -88,7 +88,7 @@ maybebig(x::AbstractFloat) = big(x)
             # Derivative(N)
             @test bsplines(basis, x, Derivative(N), leftknot=leftknot) == bspl_nderiv[:, N]
             # AllDerivatives(N)
-            @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(bspl_nderiv[range, 0:N-1], range, 0:N-1)
+            @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(parent(bspl_nderiv)[:, 1:N], range, 0:N-1)
         end
     end
 
@@ -174,27 +174,34 @@ end
         range = offset+1:leftknot
 
         # AllDerivatives(NDERIV)
-        bspl_nderiv = fill(T(Inf), order(basis), NDERIV)
-        bspl_nderiv_exact = parent(bsplines_exact(basis_exact, x, range, AllDerivatives(NDERIV)))
-        off = bsplines!(bspl_nderiv, basis, x, AllDerivatives(NDERIV), leftknot=leftknot)
+        dest0 = fill(T(Inf), order(basis), NDERIV)
+        bspl_nderiv_exact = bsplines_exact(basis_exact, x, range, AllDerivatives(NDERIV))
+        bspl_nderiv = bsplines!(dest0, basis, x, AllDerivatives(NDERIV), leftknot=leftknot)
         if isexact
-            @test off == offset && bspl_nderiv == bspl_nderiv_exact
+            @test bspl_nderiv == bspl_nderiv_exact
         else
-            @test off == offset && bspl_nderiv ≈ₑₗ bspl_nderiv_exact
+            @test bspl_nderiv ≈ₑₗ bspl_nderiv_exact
         end
+        @test parent(bspl_nderiv) === dest0
 
         # No derivative
-        dest = fill(T(Inf), order(basis))
-        @test bsplines!(dest, basis, x, leftknot=leftknot) == offset && dest == bspl_nderiv[:,1]
+        dest1 = fill(T(Inf), order(basis))
+        bspl1 = bsplines!(dest1, basis, x, leftknot=leftknot)
+        @test bspl1 == bspl_nderiv[:,0]
+        @test parent(bspl1) === dest1
 
         # AllDerivatives(N) and Derivative(N) for N = 1:NDERIV-1
         for N = 1:NDERIV-1
             # Derivative(N)
-            dest = fill(T(Inf), order(basis))
-            @test bsplines!(dest, basis, x, Derivative(N), leftknot=leftknot) == offset && dest == bspl_nderiv[:,N+1]
+            fill!(dest1, T(Inf))
+            bspl1 = bsplines!(dest1, basis, x, Derivative(N), leftknot=leftknot)
+            @test bspl1 == bspl_nderiv[:,N]
+            @test parent(bspl1) === dest1
             # AllDerivatives(N)
-            dest = fill(T(Inf), order(basis), N)
-            @test bsplines!(dest, basis, x, AllDerivatives(N), leftknot=leftknot) == offset && dest == bspl_nderiv[:,1:N]
+            dest2 = fill(T(Inf), order(basis), N)
+            bspl2 = bsplines!(dest2, basis, x, AllDerivatives(N), leftknot=leftknot)
+            @test bspl2 == OffsetArray(parent(bspl_nderiv)[:,1:N], offset, -1)
+            @test parent(bspl2) === dest2
         end
     end
 
@@ -263,14 +270,23 @@ end
     @test_throws ArgumentError bsplines!(dest, b5, 0, AllDerivatives(3), leftknot=nothing)
     dest1 = fill(NaN, order(b5))
     dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0) == bsplines!(dest2, b5, 0, leftknot=leftknot) && dest1 == dest2
-    dest1 = fill(NaN, order(b5))
-    dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0, Derivative(0), leftknot=leftknot) == bsplines!(dest2, b5, 0, leftknot=leftknot) && dest1 == dest2
-    dest1 = fill(NaN, order(b5))
-    dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0, Derivative(1)) == bsplines!(dest2, b5, 0, Derivative(1), leftknot=leftknot) && dest1 == dest2
+    bsp1 = bsplines!(dest1, b5, 0)
+    bsp2 = bsplines!(dest2, b5, 0, leftknot=leftknot)
+    @test bsp1 == bsp2
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
+    fill!(dest1, NaN)
+    fill!(dest2, NaN)
+    bsp1 = bsplines!(dest1, b5, 0, Derivative(1))
+    bsp2 = bsplines!(dest2, b5, 0, Derivative(1), leftknot=leftknot)
+    @test bsp1 == bsp2
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
     dest1 = fill(NaN, order(b5), 3)
     dest2 = fill(NaN, order(b5), 3)
-    @test bsplines!(dest1, b5, 0, AllDerivatives(3)) == bsplines!(dest2, b5, 0, AllDerivatives(3), leftknot=leftknot) && dest1 == dest2
+    bsp1 = bsplines!(dest1, b5, 0, AllDerivatives(3))
+    bsp2 = bsplines!(dest2, b5, 0, AllDerivatives(3), leftknot=leftknot)
+    @test bsp1 == bsp2
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
 end
