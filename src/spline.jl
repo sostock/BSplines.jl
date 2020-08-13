@@ -29,13 +29,20 @@ Base.hash(x::Spline, h::UInt) =
     hash(coeffs(x), hash(breakpoints(basis(x)), hash(order(x), hash(:Spline, h))))
 
 function Base.show(io::IO, ::MIME"text/plain", s::Spline)
+    cio = IOContext(io, :compact=>true)
     summary(io, s); println(io, ':')
     print(io, " basis: "); summary(io, basis(s)); println(io, ':')
     println(io, "  order: ", order(basis(s)))
     print(io, "  breakpoints: ")
-    show(IOContext(io, :compact=>true), breakpoints(basis(s)))
-    print(io, "\n coeffs: ")
-    show(IOContext(io, :compact=>true), coeffs(s))
+    show(cio, breakpoints(basis(s)))
+    if s isa BSpline
+        print(io, "\n index: ", coeffs(s).index, " (knots: ")
+        show(cio, bsplineknots(s))
+        print(io, ')')
+    else
+        print(io, "\n coeffs: ")
+        show(cio, coeffs(s))
+    end
 end
 
 # Splines act as scalars for broadcasting
@@ -118,14 +125,6 @@ BSpline{BSplineBasis{UnitRange{Int64}}}:
 
 Base.show(io::IO, x::BSpline) =
     (summary(io, x); print(io, '(', basis(x), ", ", coeffs(x).index, ')'))
-
-function Base.show(io::IO, ::MIME"text/plain", x::BSpline)
-    summary(io, x); println(io, ':')
-    print(io, " basis: "); summary(io, basis(x)); println(io, ':')
-    println(io, "  order: ", order(basis(x)))
-    println(io, "  breakpoints: ", breakpoints(basis(x)))
-    print(io, " index: ", coeffs(x).index, " (knots: ", bsplineknots(x), ')')
-end
 
 Base.summary(io::IO, x::BSpline{B}) where B = print(io, "BSpline{", B, '}')
 
