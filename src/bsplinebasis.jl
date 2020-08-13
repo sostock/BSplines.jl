@@ -61,7 +61,8 @@ end
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')
     println(io, " order: ", order(basis))
-    print(io, " breakpoints: ", breakpoints(basis))
+    print(io, " breakpoints: ")
+    show(IOContext(io, :compact=>true), breakpoints(basis))
 end
 
 Base.summary(io::IO, basis::BSplineBasis) =

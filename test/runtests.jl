@@ -323,6 +323,29 @@ end
     @testset "Printing" begin
         @test summary(BSplineBasis(5, 0:5)) == "9-element BSplineBasis{UnitRange{$Int}}"
         @test summary(BSplineBasis(8, [1.0:0.1:3.0;])) == "27-element BSplineBasis{$(Vector{Float64})}"
+        @test summary(Spline(BSplineBasis(5, 0:5), zeros(9))) == "Spline{BSplineBasis{UnitRange{$Int}},$(Vector{Float64})}"
+        @test summary(Spline(BSplineBasis(8, [1.0:0.1:3.0;]), 1:27)) == "Spline{BSplineBasis{$(Vector{Float64})},UnitRange{$Int}}"
+        @test summary(BSpline(BSplineBasis(5, 0:5), 1)) == "BSpline{BSplineBasis{UnitRange{$Int}}}"
+        @test summary(BSpline(BSplineBasis(8, [1.0:0.1:3.0;]), 1)) == "BSpline{BSplineBasis{$(Vector{Float64})}}"
+        @test repr(MIME"text/plain"(), BSplineBasis(5, [1,π])) ==
+            """
+            5-element BSplineBasis{$(Vector{Float64})}:
+             order: 5
+             breakpoints: [1.0, 3.14159]"""
+        @test repr(MIME"text/plain"(), Spline(BSplineBasis(5, [1,π]), sqrt.(0:4))) ==
+            """
+            Spline{BSplineBasis{$(Vector{Float64})},$(Vector{Float64})}:
+             basis: 5-element BSplineBasis{$(Vector{Float64})}:
+              order: 5
+              breakpoints: [1.0, 3.14159]
+             coeffs: [0.0, 1.0, 1.41421, 1.73205, 2.0]"""
+        @test repr(MIME"text/plain"(), BSpline(BSplineBasis(5, [1,π]), 2)) ==
+            """
+            BSpline{BSplineBasis{$(Vector{Float64})}}:
+             basis: 5-element BSplineBasis{$(Vector{Float64})}:
+              order: 5
+              breakpoints: [1.0, 3.14159]
+             index: 2 (knots: [1.0, 1.0, 1.0, 1.0, 3.14159, 3.14159])"""
     end
 end
 
