@@ -39,9 +39,6 @@ splinevalue(spl, 2.5, Derivative(2))
 !!! info
     The [`AllDerivatives{N}`](@ref) type is not supported as an argument.
 
-Evaluating a spline at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector of the basis.
-If the index is already known, it can be specified with the `leftknot` keyword argument to speed up the computation.
-
 ## Arithmetic with `Spline`s
 
 A `Spline` can be multiplied or divided by a real number using `*`, `/`, or `\`.
@@ -95,4 +92,26 @@ bspl = b[3]
 spl == bspl
 support(spl) # support of the basis
 support(bspl) # actual support of the B-spline
+```
+
+## Performance considerations
+
+Two optional keyword arguments can be used to speed up the evaluation of splines:
+
+  * Evaluating a spline at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector of the basis.
+    If the index is already known, it can be specified with the `leftknot` keyword argument.
+  * To evaluate a spline, a vector of length `order(spline)` is used to store intermediate values.
+    By default, a new vector is allocated for each evaluation.
+    To avoid this, a pre-allocated vector can be specified with the `workspace` keyword argument.
+    Note that in this case, the calculations are performed with numbers of type `eltype(workspace)`.
+
+```@repl spline
+using BenchmarkTools
+spl = Spline(BSplineBasis(4, 0:5), rand(8));
+left = intervalindex(basis(spl), 2.5);
+work = zeros(order(spl));
+@btime $spl(2.5)
+@btime $spl(2.5, leftknot=$left)
+@btime $spl(2.5, workspace=$work)
+@btime $spl(2.5, leftknot=$left, workspace=$work)
 ```
