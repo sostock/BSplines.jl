@@ -223,15 +223,21 @@ julia> spl(5, Derivative(1))
 splinevalue(::Spline, x, ::Derivative; kwargs...)
 
 function splinevalue(spline::Spline, x, drv::Derivative{N}=NoDerivative();
-                     leftknot=intervalindex(basis(spline), x)) where N
+                     leftknot=intervalindex(basis(spline), x),
+                     workspace=nothing) where N
     check_intervalindex(spline, x, leftknot)
-    T = bspline_returntype(spline, x)
+    T = workspace === nothing ? bspline_returntype(spline, x) : eltype(workspace)
     leftknot === nothing && return isnan(x) ? T(NaN) : zero(T)
     if spline isa BSpline
         iszero_bspline(spline, leftknot) && return zero(T)
     end
     N ≥ order(spline) && return zero(T)
-    @inbounds _splinevalue(T, basis(spline), coeffs(spline), x, leftknot, drv)
+    if workspace === nothing
+        workspace = Vector{T}(undef, order(spline))
+    elseif axes(workspace) != (Base.OneTo(order(spline)),)
+        throw(DimensionMismatch("workspace must be a vector of length k"))
+    end
+    @inbounds _splinevalue(workspace, basis(spline), coeffs(spline), x, leftknot, drv)
 end
 
 # Return true iff `spline` is zero on the interval given by `leftknot`
@@ -246,11 +252,10 @@ end
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _splinevalue(T::Type, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
+@propagate_inbounds function _splinevalue(A, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
-    xtyped = convert(T, x)
-    A = Vector{T}(undef, k)
+    xtyped = convert(eltype(A), x)
     A .= @view coeffs[leftknot-k+1:leftknot]
     # Difference the coefficients (stored in A) N times
     for j = 1:N
