@@ -3,6 +3,9 @@
 ## master
 
 * ![BREAKING](https://img.shields.io/badge/-BREAKING-red) `bsplines!(dest, args...)` now returns an `OffsetArray` that wraps `dest`, making its output equal to that of `bsplines(args...)`. ([#8](https://github.com/sostock/BSplines.jl/pull/8))
+
+* ![Feature](https://img.shields.io/badge/-feature-green) `splinevalue` now has an optional `workspace` keyword argument for providing a vector to store intermediate values in order to avoid unnecessary allocations. ([#10](https://github.com/sostock/BSplines.jl/pull/10))
+
 * ![Enhancement](https://img.shields.io/badge/-enhancement-blue) The default printing of `BSplineBasis` and `Spline` now uses the compact style for printing the breakpoint and coefficient vectors. ([#9](https://github.com/sostock/BSplines.jl/pull/9))
 
 
