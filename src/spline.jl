@@ -160,15 +160,22 @@ support(s::Spline) = support(basis(s))
 support(b::BSpline) = (t = knots(basis(b)); i = coeffs(b).index; (t[i], t[i+order(b)]))
 
 """
-    splinevalue(spline::Spline, x; leftknot=intervalindex(basis(spline), x))
+    splinevalue(spline::Spline, x, [::Derivative{N}]; kwargs...)
 
-Calculate the values of `spline` at `x`.
+Calculate the value of `spline`, or its `N`-th derivative, at `x`.
 
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
+Two optional keyword arguments can be used to increase performance:
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
+* `workspace`: By default, the function allocates a vector of length `order(spline)` in
+  which the calculation is performed. To avoid this, a pre-allocated vector can be supplied
+  with the `workspace` keyword. In this case, the returned value is always of type
+  `eltype(workspace)`.
 
 Instead of calling `splinevalue`, a spline object can be called directly:
-`spline(x; [leftknot])` is equivalent to `splinevalue(spline, x; [leftknot])`.
+`spline(x, [deriv]; kwargs...)` is equivalent to
+`splinevalue(spline, x, [deriv]; kwargs...)`.
 
 # Examples
 
@@ -178,50 +185,19 @@ julia> spl = Spline(BSplineBasis(4, 0:5), 1:8);
 julia> splinevalue(spl, 1.7)
 3.69775
 
+julia> splinevalue(spl, 1.7, Derivative(1))
+1.0225
+
 julia> splinevalue(spl, 3.6, leftknot=7)
 5.618
 
 julia> spl(18//5)
 2809//500
 
-julia> spl(5, leftknot=8)
-8.0
-```
-"""
-splinevalue(::Spline, x; kwargs...)
-
-"""
-    splinevalue(spline::Spline, x, ::Derivative{N}; leftknot=intervalindex(basis(spline), x))
-
-Calculate the value of the `N`-th derivative of `spline` at `x`.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-Instead of calling `splinevalue`, a spline object can be called directly:
-`spline(x, Derivative(N); [leftknot])` is equivalent to
-`splinevalue(spline, x, Derivative(N); [leftknot])`.
-
-# Examples
-
-```jldoctest
-julia> spl = Spline(BSplineBasis(4, 0:5), 1:8);
-
-julia> splinevalue(spl, 1.7, Derivative(1))
-1.0225
-
-julia> splinevalue(spl, 18//5, Derivative(2), leftknot=7)
-3//10
-
-julia> spl(3.6, Derivative(3))
+julia> spl(3.6, Derivative(3), leftknot=7)
 0.5
-
-julia> spl(5, Derivative(1))
-3.0
 ```
 """
-splinevalue(::Spline, x, ::Derivative; kwargs...)
-
 function splinevalue(spline::Spline, x, drv::Derivative{N}=NoDerivative();
                      leftknot=intervalindex(basis(spline), x),
                      workspace=nothing) where N
@@ -234,8 +210,12 @@ function splinevalue(spline::Spline, x, drv::Derivative{N}=NoDerivative();
     N ≥ order(spline) && return zero(T)
     if workspace === nothing
         workspace = Vector{T}(undef, order(spline))
-    elseif axes(workspace) != (Base.OneTo(order(spline)),)
-        throw(DimensionMismatch("workspace must be a vector of length k"))
+    else
+        exp = (Base.OneTo(order(spline)),)
+        got = axes(workspace)
+        if exp != got
+            throw(DimensionMismatch("workspace has wrong axes: expected $exp, got $got"))
+        end
     end
     @inbounds _splinevalue(workspace, basis(spline), coeffs(spline), x, leftknot, drv)
 end
