@@ -498,8 +498,8 @@ Calculate the values of all non-zero B-splines of `basis`, or their `N`-th deriv
 `order(basis)`.
 
 If any B-splines are non-zero at `x`, return an `OffsetVector` that wraps `dest` and
-contains the value of the `i`-th B-spline at the index `i`. If no B-splines are non-zero at
-`x`, return `nothing`.
+contains the value of the `i`-th B-spline (or its `N`-th derivative) at the index `i`. If no
+B-splines are non-zero at `x`, return `nothing`.
 
 If the index of the relevant interval is already known, it can be supplied with the optional
 `leftknot` keyword to speed up the calculation.
