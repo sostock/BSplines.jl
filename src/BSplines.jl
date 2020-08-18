@@ -50,7 +50,7 @@ bspline_returntype(spline::Spline, xtype::Type) =
 
 function bspline_returntype(knottype::Type, types::Type...)
     T = promote_type(knottype, types...)
-    typeof(one(T)/one(knottype))
+    typeof(oneunit(T)/oneunit(knottype))
 end
 
 

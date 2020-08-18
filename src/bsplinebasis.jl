@@ -602,7 +602,7 @@ destarray_axes(basis, ::AllDerivatives{N}) where N = (Base.OneTo(order(basis)), 
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
-    dest[1] = one(eltype(dest))
+    dest[1] = oneunit(eltype(dest))
     for j = 1:k-1
         iterate_bsplines!(dest, dest, t, j, xtyped, leftknot)
     end
@@ -624,7 +624,7 @@ end
     dest[:, N′+1:N] .= zero(eltype(dest))
     # Successively calculate values of B-splines and store them in dest
     lastcol = @view dest[N′:k, N′]
-    lastcol[1] = one(eltype(dest))
+    lastcol[1] = oneunit(eltype(dest))
     for j = 1:k-N′
         iterate_bsplines!(lastcol, lastcol, t, j, xtyped, leftknot)
     end
@@ -667,7 +667,7 @@ end
         # Calculate B-splines of order k-N and store them in dest[N+1:k]
         col = @view dest[N+1:k]
         # col = uview(dest, N+1:k)
-        col[1] = one(eltype(dest))
+        col[1] = oneunit(eltype(dest))
         for j = 1:k-N-1
             iterate_bsplines!(col, col, t, j, xtyped, leftknot)
         end
