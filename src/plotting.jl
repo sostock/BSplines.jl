@@ -99,11 +99,12 @@ _joinsupport((xmin, xmax), (ymin, ymax)) = (min(xmin, ymin), max(xmax, ymax))
     label --> permutedims(eachindex(basis))
     xs = Matrix{Float64}(undef, pointsperspline, length(basis))
     ys = similar(xs)
+    workspace = Vector{Float64}(undef, order(basis))
     for (j, bspline) = enumerate(basis)
         xmin, xmax = support(bspline)
         for (i, x) = enumerate(range(xmin, stop=xmax, length=pointsperspline))
             xs[i,j] = x
-            ys[i,j] = bspline(x)
+            ys[i,j] = bspline(x, workspace=workspace)
         end
     end
     xs, ys
