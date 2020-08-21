@@ -276,9 +276,9 @@ Return an iterator that yields the numbers
 IntervalIndices(vec::T, indices, offset) where T<:AbstractVector{<:Real} =
     IntervalIndices{T}(vec, indices, offset)
 
-Base.IteratorSize(::IntervalIndices) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:IntervalIndices}) = Base.SizeUnknown()
 
-Base.eltype(i::IntervalIndices) = Int
+Base.eltype(::Type{<:IntervalIndices}) = Int
 
 function Base.iterate(i::IntervalIndices, (index,value)=(first(i.indices),i.vec[first(i.indices)]))
     while index < last(i.indices)
