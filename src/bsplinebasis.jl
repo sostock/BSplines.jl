@@ -42,7 +42,7 @@ Base.checkbounds(::Type{Bool}, b::BSplineBasis, i) = checkindex(Bool, eachindex(
 
 Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
-Base.eltype(b::BSplineBasis) = BSpline{typeof(b)}
+Base.eltype(T::Type{<:BSplineBasis}) = BSpline{T}
 
 Base.length(b::BSplineBasis) = Int(length(breakpoints(b))) + order(b) - 2
 

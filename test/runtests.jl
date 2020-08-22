@@ -291,6 +291,7 @@ end
 
     @testset "Indexing and iteration" begin
         b1 = BSplineBasis(5, 0:5)
+        @test eltype(typeof(b1)) === BSpline{BSplineBasis{UnitRange{Int}}}
         @test collect(b1) == [b1[i] for i=1:9]
         @test @inferred(first(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
         @test @inferred(last(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
@@ -302,6 +303,7 @@ end
         @test_throws BoundsError b1[0]
         @test_throws BoundsError b1[10]
         b2 = BSplineBasis(3, [1,2,3.5,6,10])
+        @test eltype(typeof(b2)) === BSpline{BSplineBasis{Vector{Float64}}}
         @test collect(b2) == [b2[i] for i=1:6]
         @test @inferred(first(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
         @test @inferred(last(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}

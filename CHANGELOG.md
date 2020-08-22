@@ -8,7 +8,7 @@
 
 * ![Enhancement](https://img.shields.io/badge/-enhancement-blue) The default printing of `BSplineBasis` and `Spline` now uses the compact style for printing the breakpoint and coefficient vectors. ([#9](https://github.com/sostock/BSplines.jl/pull/9))
 
-* ![Bugfix](https://img.shields.io/badge/-bugfix-purple) The `IntervalIndices` iterator now implements `IteratorSize` and `eltype` correctly. ([#14](https://github.com/sostock/HalfIntegers.jl/pull/14))
+* ![Bugfix](https://img.shields.io/badge/-bugfix-purple) `BSplineBasis` and `IntervalIndices` now implement `IteratorSize` and `eltype` correctly. ([#14](https://github.com/sostock/HalfIntegers.jl/pull/14))
 
 ## v0.2.5
 
