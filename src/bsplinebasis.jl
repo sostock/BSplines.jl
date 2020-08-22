@@ -42,7 +42,7 @@ Base.checkbounds(::Type{Bool}, b::BSplineBasis, i) = checkindex(Bool, eachindex(
 
 Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
-Base.eltype(b::BSplineBasis) = BSpline{typeof(b)}
+Base.eltype(T::Type{<:BSplineBasis}) = BSpline{T}
 
 Base.length(b::BSplineBasis) = Int(length(breakpoints(b))) + order(b) - 2
 
@@ -276,9 +276,9 @@ Return an iterator that yields the numbers
 IntervalIndices(vec::T, indices, offset) where T<:AbstractVector{<:Real} =
     IntervalIndices{T}(vec, indices, offset)
 
-Base.IteratorSize(::IntervalIndices) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:IntervalIndices}) = Base.SizeUnknown()
 
-Base.eltype(i::IntervalIndices) = Int
+Base.eltype(::Type{<:IntervalIndices}) = Int
 
 function Base.iterate(i::IntervalIndices, (index,value)=(first(i.indices),i.vec[first(i.indices)]))
     while index < last(i.indices)

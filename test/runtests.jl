@@ -128,8 +128,12 @@ end
 @testset "intervalindices" begin
     support = [(1, 3:3), (2, 3:4), (3, 3:5), (4, 4:6), (5, 5:7), (6, 6:7), (7, 7:7)]
     for basis = [BSplineBasis(3, 0:5), BSplineBasis(3, 1//2:1//2:3//1), BSplineBasis(3, 0.0:0.2:1.0)]
-        @test @inferred(eltype(intervalindices(basis))) === Int
-        @test @inferred(eltype(intervalindices(basis))) === Int
+        for itr = [intervalindices(basis), intervalindices(basis, :), intervalindices(basis, 1:7),
+                   intervalindices(basis, 1), intervalindices(basis, 1, 2)]
+            @test eltype(typeof(itr)) === Int
+            @test Base.IteratorEltype(typeof(itr)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(itr)) === Base.HasShape{1}()
+        end
         @test collect(intervalindices(basis))      == 3:7
         @test collect(intervalindices(basis, :))   == 3:7
         @test collect(intervalindices(basis, 1:7)) == 3:7
@@ -158,22 +162,29 @@ end
     end
     support = [(1, [4]), (2, [4,5]), (3, [4,5]), (4, [4,5,7]), (5, [5,7,8]),
                (6, [7,8,9]), (7, [7,8,9]), (8, [8,9]), (9, [9])]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]))) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), :)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:9)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:8)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 4:8)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:6)) == [4,5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 5:6)) == [5,7,8,9]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 1:0)) == Int[]
-    @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), 7:6)) == Int[]
+    basis = BSplineBasis(4, [1,2,3,3,4,5,6])
+    for itr = [intervalindices(basis), intervalindices(basis, :), intervalindices(basis, 1:7),
+               intervalindices(basis, 1), intervalindices(basis, 1, 2)]
+        @test eltype(typeof(itr)) === Int
+        @test Base.IteratorEltype(typeof(itr)) === Base.HasEltype()
+        @test Base.IteratorSize(typeof(itr)) === Base.SizeUnknown()
+    end
+    @test collect(intervalindices(basis)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, :)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, 1:9)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, 1:8)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, 4:8)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, 1:6)) == [4,5,7,8,9]
+    @test collect(intervalindices(basis, 5:6)) == [5,7,8,9]
+    @test collect(intervalindices(basis, 1:0)) == Int[]
+    @test collect(intervalindices(basis, 7:6)) == Int[]
     for (i, irange) = support
-        @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i:i)) == irange
-        @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i)) == irange
+        @test collect(intervalindices(basis, i:i)) == irange
+        @test collect(intervalindices(basis, i)) == irange
         for (j, jrange) = support
-            @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i, j)) == irange ∩ jrange
+            @test collect(intervalindices(basis, i, j)) == irange ∩ jrange
             for (k, krange) = support
-                @test collect(intervalindices(BSplineBasis(4, [1,2,3,3,4,5,6]), i, j, k)) == irange ∩ jrange ∩ krange
+                @test collect(intervalindices(basis, i, j, k)) == irange ∩ jrange ∩ krange
             end
         end
     end
@@ -280,6 +291,7 @@ end
 
     @testset "Indexing and iteration" begin
         b1 = BSplineBasis(5, 0:5)
+        @test eltype(typeof(b1)) === BSpline{BSplineBasis{UnitRange{Int}}}
         @test collect(b1) == [b1[i] for i=1:9]
         @test @inferred(first(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
         @test @inferred(last(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
@@ -291,6 +303,7 @@ end
         @test_throws BoundsError b1[0]
         @test_throws BoundsError b1[10]
         b2 = BSplineBasis(3, [1,2,3.5,6,10])
+        @test eltype(typeof(b2)) === BSpline{BSplineBasis{Vector{Float64}}}
         @test collect(b2) == [b2[i] for i=1:6]
         @test @inferred(first(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
         @test @inferred(last(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
