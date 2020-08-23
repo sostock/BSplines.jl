@@ -290,6 +290,21 @@ function Base.iterate(i::IntervalIndices, (index,value)=(first(i.indices),i.vec[
     return nothing
 end
 
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices})
+    isempty(i.itr.indices) && return nothing
+    index = last(i.itr.indices)
+    iterate(i, (index,i.itr.vec[index]))
+end
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices}, (index,value))
+    while index > first(i.itr.indices)
+        nextindex = index - 1
+        nextvalue = i.itr.vec[nextindex]
+        value > nextvalue && return (nextindex+i.itr.offset, (nextindex, nextvalue))
+        index = nextindex
+    end
+    return nothing
+end
+
 """
     intervalindices(basis::BSplineBasis, indices=eachindex(basis))
 

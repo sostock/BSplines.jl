@@ -141,6 +141,7 @@ end
         @test intervalindices(basis, 2:4) == 3:6
         @test isempty(intervalindices(basis, 1:0))
         @test isempty(intervalindices(basis, 4:3))
+        @test isempty(intervalindices(basis, 100:99))
         for (i, irange) = support
             @test intervalindices(basis, i:i) == irange
             @test intervalindices(basis, i) == irange
@@ -176,6 +177,7 @@ end
     @test collect(intervalindices(basis, 5:6)) == [5,7,8,9]
     @test isempty(intervalindices(basis, 1:0))
     @test isempty(intervalindices(basis, 7:6))
+    @test isempty(intervalindices(basis, -100:-101))
     for (i, irange) = support
         @test collect(intervalindices(basis, i:i)) == irange
         @test collect(intervalindices(basis, i)) == irange
@@ -204,6 +206,7 @@ end
             @test Iterators.reverse(intervalindices(basis, 2:4)) == 6:-1:3
             @test isempty(Iterators.reverse(intervalindices(basis, 1:0)))
             @test isempty(Iterators.reverse(intervalindices(basis, 4:3)))
+            @test isempty(Iterators.reverse(intervalindices(basis, 100:99)))
             for (i, irange) = support
                 @test Iterators.reverse(intervalindices(basis, i:i)) == reverse(irange)
                 @test Iterators.reverse(intervalindices(basis, i)) == reverse(irange)
@@ -234,6 +237,7 @@ end
         @test collect(Iterators.reverse(intervalindices(basis, 5:6))) == [9,8,7,5]
         @test isempty(Iterators.reverse(intervalindices(basis, 1:0)))
         @test isempty(Iterators.reverse(intervalindices(basis, 7:6)))
+        @test isempty(Iterators.reverse(intervalindices(basis, -100:-101)))
         for (i, irange) = support
             @test collect(Iterators.reverse(intervalindices(basis, i:i))) == reverse(irange)
             @test collect(Iterators.reverse(intervalindices(basis, i))) == reverse(irange)
