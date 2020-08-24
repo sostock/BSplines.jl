@@ -40,8 +40,6 @@ function Base.checkbounds(b::BSplineBasis, i)
 end
 Base.checkbounds(::Type{Bool}, b::BSplineBasis, i) = checkindex(Bool, eachindex(b), i)
 
-Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
-
 Base.eltype(T::Type{<:BSplineBasis}) = BSpline{T}
 
 Base.length(b::BSplineBasis) = Int(length(breakpoints(b))) + order(b) - 2
@@ -51,12 +49,15 @@ Base.iterate(b::BSplineBasis, i=1) = i-1 < length(b) ? (@inbounds b[i], i+1) : n
 Base.firstindex(b::BSplineBasis) = 1
 Base.lastindex(b::BSplineBasis)  = length(b)
 
-Base.keys(b::BSplineBasis) = eachindex(b)
+Base.keys(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
 @propagate_inbounds function Base.getindex(b::BSplineBasis, i::Integer)
     @boundscheck checkbounds(b, i)
     @inbounds BSpline(b, i)
 end
+
+Base.iterate(r::Iterators.Reverse{<:BSplineBasis}, i=length(r)) =
+    iszero(i) ? nothing : (@inbounds r.itr[i], i-1)
 
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')

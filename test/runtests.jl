@@ -353,6 +353,8 @@ end
     @testset "Indexing and iteration" begin
         b1 = BSplineBasis(5, 0:5)
         @test eltype(typeof(b1)) === BSpline{BSplineBasis{UnitRange{Int}}}
+        @test Base.IteratorEltype(typeof(b1)) === Base.HasEltype()
+        @test Base.IteratorSize(typeof(b1)) === Base.HasLength()
         @test collect(b1) == [b1[i] for i=1:9]
         @test @inferred(first(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
         @test @inferred(last(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
@@ -365,6 +367,8 @@ end
         @test_throws BoundsError b1[10]
         b2 = BSplineBasis(3, [1,2,3.5,6,10])
         @test eltype(typeof(b2)) === BSpline{BSplineBasis{Vector{Float64}}}
+        @test Base.IteratorEltype(typeof(b2)) === Base.HasEltype()
+        @test Base.IteratorSize(typeof(b2)) === Base.HasLength()
         @test collect(b2) == [b2[i] for i=1:6]
         @test @inferred(first(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
         @test @inferred(last(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
@@ -375,6 +379,29 @@ end
         @test b2[end] == Spline(b2, [0,0,0,0,0,1])
         @test_throws BoundsError b2[0]
         @test_throws BoundsError b2[7]
+
+        @testset "Iterators.reverse" begin
+            b1 = BSplineBasis(5, 0:5)
+            rb1 = Iterators.reverse(b1)
+            @test eltype(typeof(rb1)) === BSpline{BSplineBasis{UnitRange{Int}}}
+            @test Base.IteratorEltype(typeof(rb1)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(rb1)) === Base.HasLength()
+            @test collect(rb1) == [b1[i] for i=9:-1:1]
+            @test @inferred(first(rb1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
+            @test @inferred(last(rb1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
+            @test first(rb1) == Spline(b1, [0,0,0,0,0,0,0,0,1])
+            @test last(rb1) == Spline(b1, [1,0,0,0,0,0,0,0,0])
+            b2 = BSplineBasis(3, [1,2,3.5,6,10])
+            rb2 = Iterators.reverse(b2)
+            @test eltype(typeof(rb2)) === BSpline{BSplineBasis{Vector{Float64}}}
+            @test Base.IteratorEltype(typeof(rb2)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(rb2)) === Base.HasLength()
+            @test collect(rb2) == [b2[i] for i=6:-1:1]
+            @test @inferred(first(rb2)) isa BSpline{BSplineBasis{Vector{Float64}}}
+            @test @inferred(last(rb2)) isa BSpline{BSplineBasis{Vector{Float64}}}
+            @test first(rb2) == Spline(b2, [0,0,0,0,0,1])
+            @test last(rb2) == Spline(b2, [1,0,0,0,0,0])
+        end
     end
 
     @testset "breakpoints" begin
