@@ -6,6 +6,8 @@
 
 * ![Feature](https://img.shields.io/badge/-feature-green) `splinevalue` now accepts a keyword argument `workspace` for providing a vector to store intermediate values in order to avoid unnecessary allocations. ([#10](https://github.com/sostock/BSplines.jl/pull/10))
 
+* ![Feature](https://img.shields.io/badge/-feature-green) `BSplineBasis` and `IntervalIndices` now support reverse iteration via `Iterators.reverse`. ([#15](https://github.com/sostock/BSplines.jl/pull/15))
+
 * ![Enhancement](https://img.shields.io/badge/-enhancement-blue) The default printing of `BSplineBasis` and `Spline` now uses the compact style for printing the breakpoint and coefficient vectors. ([#9](https://github.com/sostock/BSplines.jl/pull/9))
 
 * ![Bugfix](https://img.shields.io/badge/-bugfix-purple) `BSplineBasis` and `IntervalIndices` now implement `IteratorSize` and `eltype` correctly. ([#14](https://github.com/sostock/HalfIntegers.jl/pull/14))
