@@ -40,8 +40,6 @@ function Base.checkbounds(b::BSplineBasis, i)
 end
 Base.checkbounds(::Type{Bool}, b::BSplineBasis, i) = checkindex(Bool, eachindex(b), i)
 
-Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
-
 Base.eltype(T::Type{<:BSplineBasis}) = BSpline{T}
 
 Base.length(b::BSplineBasis) = Int(length(breakpoints(b))) + order(b) - 2
@@ -51,12 +49,15 @@ Base.iterate(b::BSplineBasis, i=1) = i-1 < length(b) ? (@inbounds b[i], i+1) : n
 Base.firstindex(b::BSplineBasis) = 1
 Base.lastindex(b::BSplineBasis)  = length(b)
 
-Base.keys(b::BSplineBasis) = eachindex(b)
+Base.keys(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
 @propagate_inbounds function Base.getindex(b::BSplineBasis, i::Integer)
     @boundscheck checkbounds(b, i)
     @inbounds BSpline(b, i)
 end
+
+Base.iterate(r::Iterators.Reverse{<:BSplineBasis}, i=length(r)) =
+    iszero(i) ? nothing : (@inbounds r.itr[i], i-1)
 
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')
@@ -285,6 +286,21 @@ function Base.iterate(i::IntervalIndices, (index,value)=(first(i.indices),i.vec[
         nextindex = index + 1
         nextvalue = i.vec[nextindex]
         value < nextvalue && return (index+i.offset, (nextindex, nextvalue))
+        index = nextindex
+    end
+    return nothing
+end
+
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices})
+    isempty(i.itr.indices) && return nothing
+    index = last(i.itr.indices)
+    iterate(i, (index,i.itr.vec[index]))
+end
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices}, (index,value))
+    while index > first(i.itr.indices)
+        nextindex = index - 1
+        nextvalue = i.itr.vec[nextindex]
+        value > nextvalue && return (nextindex+i.itr.offset, (nextindex, nextvalue))
         index = nextindex
     end
     return nothing

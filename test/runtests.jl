@@ -130,26 +130,25 @@ end
     for basis = [BSplineBasis(3, 0:5), BSplineBasis(3, 1//2:1//2:3//1), BSplineBasis(3, 0.0:0.2:1.0)]
         for itr = [intervalindices(basis), intervalindices(basis, :), intervalindices(basis, 1:7),
                    intervalindices(basis, 1), intervalindices(basis, 1, 2)]
-            @test eltype(typeof(itr)) === Int
-            @test Base.IteratorEltype(typeof(itr)) === Base.HasEltype()
-            @test Base.IteratorSize(typeof(itr)) === Base.HasShape{1}()
+            @test itr isa UnitRange{Int}
         end
-        @test collect(intervalindices(basis))      == 3:7
-        @test collect(intervalindices(basis, :))   == 3:7
-        @test collect(intervalindices(basis, 1:7)) == 3:7
-        @test collect(intervalindices(basis, 1:6)) == 3:7
-        @test collect(intervalindices(basis, 3:7)) == 3:7
-        @test collect(intervalindices(basis, 1:5)) == 3:7
-        @test collect(intervalindices(basis, 2:4)) == 3:6
-        @test collect(intervalindices(basis, 1:0)) == Int[]
-        @test collect(intervalindices(basis, 4:3)) == Int[]
+        @test intervalindices(basis)      == 3:7
+        @test intervalindices(basis, :)   == 3:7
+        @test intervalindices(basis, 1:7) == 3:7
+        @test intervalindices(basis, 1:6) == 3:7
+        @test intervalindices(basis, 3:7) == 3:7
+        @test intervalindices(basis, 1:5) == 3:7
+        @test intervalindices(basis, 2:4) == 3:6
+        @test isempty(intervalindices(basis, 1:0))
+        @test isempty(intervalindices(basis, 4:3))
+        @test isempty(intervalindices(basis, 100:99))
         for (i, irange) = support
-            @test collect(intervalindices(basis, i:i)) == irange
-            @test collect(intervalindices(basis, i)) == irange
+            @test intervalindices(basis, i:i) == irange
+            @test intervalindices(basis, i) == irange
             for (j, jrange) = support
-                @test collect(intervalindices(basis, i, j)) == irange ∩ jrange
+                @test intervalindices(basis, i, j) == irange ∩ jrange
                 for (k, krange) = support
-                    @test collect(intervalindices(basis, i, j, k)) == irange ∩ jrange ∩ krange
+                    @test intervalindices(basis, i, j, k) == irange ∩ jrange ∩ krange
                 end
             end
         end
@@ -176,8 +175,9 @@ end
     @test collect(intervalindices(basis, 4:8)) == [4,5,7,8,9]
     @test collect(intervalindices(basis, 1:6)) == [4,5,7,8,9]
     @test collect(intervalindices(basis, 5:6)) == [5,7,8,9]
-    @test collect(intervalindices(basis, 1:0)) == Int[]
-    @test collect(intervalindices(basis, 7:6)) == Int[]
+    @test isempty(intervalindices(basis, 1:0))
+    @test isempty(intervalindices(basis, 7:6))
+    @test isempty(intervalindices(basis, -100:-101))
     for (i, irange) = support
         @test collect(intervalindices(basis, i:i)) == irange
         @test collect(intervalindices(basis, i)) == irange
@@ -185,6 +185,67 @@ end
             @test collect(intervalindices(basis, i, j)) == irange ∩ jrange
             for (k, krange) = support
                 @test collect(intervalindices(basis, i, j, k)) == irange ∩ jrange ∩ krange
+            end
+        end
+    end
+
+    @testset "Iterators.reverse" begin
+        support = [(1, 3:3), (2, 3:4), (3, 3:5), (4, 4:6), (5, 5:7), (6, 6:7), (7, 7:7)]
+        for basis = [BSplineBasis(3, 0:5), BSplineBasis(3, 1//2:1//2:3//1), BSplineBasis(3, 0.0:0.2:1.0)]
+            for itr = Iterators.reverse.([intervalindices(basis), intervalindices(basis, :),
+                                          intervalindices(basis, 1:7), intervalindices(basis, 1), 
+                                          intervalindices(basis, 1, 2)])
+                @test itr isa StepRange{Int}
+            end
+            @test Iterators.reverse(intervalindices(basis))      == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, :))   == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, 1:7)) == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, 1:6)) == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, 3:7)) == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, 1:5)) == 7:-1:3
+            @test Iterators.reverse(intervalindices(basis, 2:4)) == 6:-1:3
+            @test isempty(Iterators.reverse(intervalindices(basis, 1:0)))
+            @test isempty(Iterators.reverse(intervalindices(basis, 4:3)))
+            @test isempty(Iterators.reverse(intervalindices(basis, 100:99)))
+            for (i, irange) = support
+                @test Iterators.reverse(intervalindices(basis, i:i)) == reverse(irange)
+                @test Iterators.reverse(intervalindices(basis, i)) == reverse(irange)
+                for (j, jrange) = support
+                    @test Iterators.reverse(intervalindices(basis, i, j)) == reverse(irange ∩ jrange)
+                    for (k, krange) = support
+                        @test Iterators.reverse(intervalindices(basis, i, j, k)) == reverse(irange ∩ jrange ∩ krange)
+                    end
+                end
+            end
+        end
+        support = [(1, [4]), (2, [4,5]), (3, [4,5]), (4, [4,5,7]), (5, [5,7,8]),
+                   (6, [7,8,9]), (7, [7,8,9]), (8, [8,9]), (9, [9])]
+        basis = BSplineBasis(4, [1,2,3,3,4,5,6])
+        for itr = Iterators.reverse.([intervalindices(basis), intervalindices(basis, :),
+                                      intervalindices(basis, 1:7), intervalindices(basis, 1),
+                                      intervalindices(basis, 1, 2)])
+            @test eltype(typeof(itr)) === Int
+            @test Base.IteratorEltype(typeof(itr)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(itr)) === Base.SizeUnknown()
+        end
+        @test collect(Iterators.reverse(intervalindices(basis))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, :))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, 1:9))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, 1:8))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, 4:8))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, 1:6))) == [9,8,7,5,4]
+        @test collect(Iterators.reverse(intervalindices(basis, 5:6))) == [9,8,7,5]
+        @test isempty(Iterators.reverse(intervalindices(basis, 1:0)))
+        @test isempty(Iterators.reverse(intervalindices(basis, 7:6)))
+        @test isempty(Iterators.reverse(intervalindices(basis, -100:-101)))
+        for (i, irange) = support
+            @test collect(Iterators.reverse(intervalindices(basis, i:i))) == reverse(irange)
+            @test collect(Iterators.reverse(intervalindices(basis, i))) == reverse(irange)
+            for (j, jrange) = support
+                @test collect(Iterators.reverse(intervalindices(basis, i, j))) == reverse(irange ∩ jrange)
+                for (k, krange) = support
+                    @test collect(Iterators.reverse(intervalindices(basis, i, j, k))) == reverse(irange ∩ jrange ∩ krange)
+                end
             end
         end
     end
@@ -292,6 +353,8 @@ end
     @testset "Indexing and iteration" begin
         b1 = BSplineBasis(5, 0:5)
         @test eltype(typeof(b1)) === BSpline{BSplineBasis{UnitRange{Int}}}
+        @test Base.IteratorEltype(typeof(b1)) === Base.HasEltype()
+        @test Base.IteratorSize(typeof(b1)) === Base.HasLength()
         @test collect(b1) == [b1[i] for i=1:9]
         @test @inferred(first(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
         @test @inferred(last(b1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
@@ -304,6 +367,8 @@ end
         @test_throws BoundsError b1[10]
         b2 = BSplineBasis(3, [1,2,3.5,6,10])
         @test eltype(typeof(b2)) === BSpline{BSplineBasis{Vector{Float64}}}
+        @test Base.IteratorEltype(typeof(b2)) === Base.HasEltype()
+        @test Base.IteratorSize(typeof(b2)) === Base.HasLength()
         @test collect(b2) == [b2[i] for i=1:6]
         @test @inferred(first(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
         @test @inferred(last(b2)) isa BSpline{BSplineBasis{Vector{Float64}}}
@@ -314,6 +379,29 @@ end
         @test b2[end] == Spline(b2, [0,0,0,0,0,1])
         @test_throws BoundsError b2[0]
         @test_throws BoundsError b2[7]
+
+        @testset "Iterators.reverse" begin
+            b1 = BSplineBasis(5, 0:5)
+            rb1 = Iterators.reverse(b1)
+            @test eltype(typeof(rb1)) === BSpline{BSplineBasis{UnitRange{Int}}}
+            @test Base.IteratorEltype(typeof(rb1)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(rb1)) === Base.HasLength()
+            @test collect(rb1) == [b1[i] for i=9:-1:1]
+            @test @inferred(first(rb1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
+            @test @inferred(last(rb1)) isa BSpline{BSplineBasis{UnitRange{Int}}}
+            @test first(rb1) == Spline(b1, [0,0,0,0,0,0,0,0,1])
+            @test last(rb1) == Spline(b1, [1,0,0,0,0,0,0,0,0])
+            b2 = BSplineBasis(3, [1,2,3.5,6,10])
+            rb2 = Iterators.reverse(b2)
+            @test eltype(typeof(rb2)) === BSpline{BSplineBasis{Vector{Float64}}}
+            @test Base.IteratorEltype(typeof(rb2)) === Base.HasEltype()
+            @test Base.IteratorSize(typeof(rb2)) === Base.HasLength()
+            @test collect(rb2) == [b2[i] for i=6:-1:1]
+            @test @inferred(first(rb2)) isa BSpline{BSplineBasis{Vector{Float64}}}
+            @test @inferred(last(rb2)) isa BSpline{BSplineBasis{Vector{Float64}}}
+            @test first(rb2) == Spline(b2, [0,0,0,0,0,1])
+            @test last(rb2) == Spline(b2, [1,0,0,0,0,0])
+        end
     end
 
     @testset "breakpoints" begin
