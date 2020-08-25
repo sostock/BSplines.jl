@@ -572,29 +572,48 @@ true
 """
 bsplines!(dest, basis, x, ::AllDerivatives; kwargs...)
 
-function bsplines(basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervalindex(basis, x))
+function bsplines(basis::BSplineBasis, x, drv=NoDerivative();
+                  leftknot=intervalindex(basis, x), derivspace=nothing)
     check_intervalindex(basis, x, leftknot)
+    check_derivspace(basis, drv, derivspace)
     leftknot === nothing && return nothing
-    dest = bsplines_destarray(basis, x, drv)
-    offset = @inbounds _bsplines!(dest, basis, x, leftknot, drv)
+    dest = bsplines_destarray(basis, x, drv, derivspace)
+    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
     bsplines_offsetarray(dest, offset, drv)
 end
+
+check_derivspace(basis, drv::NoDerivUnion, ::Nothing) = nothing
+check_derivspace(basis, drv::NoDerivUnion, derivspace) =
+    throw(ArgumentError("derivspace keyword cannot be used with $drv."))
+
+check_derivspace(basis, drv, ::Nothing) = nothing
+function check_derivspace(basis, drv, derivspace)
+    got = axes(derivspace)
+    exp = (Base.OneTo(order(basis)), Base.OneTo(order(basis)))
+    if got != exp
+        throw(DimensionMismatch("derivspace array has wrong axes: expected $exp, got $got"))
+    end
+    nothing
+end
+
+bsplines_destarray(basis, x, drv, derivspace) = bsplines_destarray(eltype(derivspace), basis, drv)
+bsplines_destarray(basis, x, drv, ::Nothing)  = bsplines_destarray(bspline_returntype(basis, x), basis, drv)
+
+bsplines_destarray(T, basis, ::Derivative)                = Vector{T}(undef, order(basis))
+bsplines_destarray(T, basis, ::AllDerivatives{N}) where N = Matrix{T}(undef, order(basis), N)
 
 bsplines_offsetarray(arr, offset, ::Derivative)     = OffsetArray(arr, offset)
 bsplines_offsetarray(arr, offset, ::AllDerivatives) = OffsetArray(arr, offset, -1)
 
-function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervalindex(basis, x))
+function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative();
+                   leftknot=intervalindex(basis, x), derivspace=nothing)
     check_intervalindex(basis, x, leftknot)
-    leftknot === nothing && return nothing
     check_destarray_axes(dest, basis, drv)
-    offset = @inbounds _bsplines!(dest, basis, x, leftknot, drv)
+    check_derivspace(basis, drv, derivspace)
+    leftknot === nothing && return nothing
+    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
     bsplines_offsetarray(dest, offset, drv)
 end
-
-bsplines_destarray(basis, x, ::Derivative) =
-    Vector{bspline_returntype(basis, x)}(undef, order(basis))
-bsplines_destarray(basis, x, ::AllDerivatives{N}) where N =
-    Matrix{bspline_returntype(basis, x)}(undef, order(basis), N)
 
 function check_destarray_axes(dest, basis, drv)
     got = axes(dest)
@@ -614,7 +633,7 @@ destarray_axes(basis, ::AllDerivatives{N}) where N = (Base.OneTo(order(basis)), 
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::NoDerivUnion)
+@propagate_inbounds function _bsplines!(dest, _, basis, x, leftknot::Integer, ::NoDerivUnion)
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
@@ -631,7 +650,7 @@ end
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::AllDerivatives{N}) where N
+@propagate_inbounds function _bsplines!(dest, derivspace, basis, x, leftknot::Integer, ::AllDerivatives{N}) where N
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
@@ -651,7 +670,7 @@ end
         iterate_bsplines!(newcol, oldcol, t, j, xtyped, leftknot)
     end
     # Successively calculate coefficients for derivatives and combine them with B-splines
-    drvcoeffs = Matrix{eltype(dest)}(I, k, k)
+    drvcoeffs = prepare_drvcoeffs(eltype(dest), order(basis), derivspace)
     for col = 2:N′
         # Column `col` contains `col-1`-th derivatives
         iterate_derivatives!(drvcoeffs, t, k, col-1, leftknot)
@@ -666,13 +685,22 @@ end
     return leftknot-k
 end
 
+prepare_drvcoeffs(T, k, ::Nothing) = Matrix{T}(I, k, k)
+function prepare_drvcoeffs(_, k, derivspace)
+    fill!(derivspace, 0)
+    for i = diagind(derivspace)
+        derivspace[i] = 1
+    end
+    derivspace
+end
+
 # The implementation of this method (and the methods iterate_bsplines! and
 # iterate_derivatives! it calls) is adapted from the Fortran subroutine BSPLVD from Carl de
 # Boor’s book *A practical Guide to Splines* [^deBoor1978].
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::Derivative{N}) where N
+@propagate_inbounds function _bsplines!(dest, derivspace, basis, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
@@ -688,7 +716,7 @@ end
             iterate_bsplines!(col, col, t, j, xtyped, leftknot)
         end
         # Calculate coefficients for derivatives and combine them with B-splines
-        drvcoeffs = Matrix{eltype(dest)}(I, k, k)
+        drvcoeffs = prepare_drvcoeffs(eltype(dest), order(basis), derivspace)
         for drv = 1:N
             iterate_derivatives!(drvcoeffs, t, k, drv, leftknot)
         end
@@ -754,8 +782,8 @@ function basismatrix(basis::BSplineBasis, xvalues; indices=Colon())
     checkbounds(Bool, basis, indices) || throw(ArgumentError("invalid indices for basis: $indices"))
     T = bspline_returntype(basis, eltype(xvalues))
     dest = zeros(T, length(xvalues), length_indices(basis, indices))
-    workspace = similar(dest, order(basis))
-    _basismatrix!(dest, workspace, basis, xvalues, indices)
+    derivspace = similar(dest, order(basis))
+    _basismatrix!(dest, derivspace, basis, xvalues, indices)
     dest
 end
 
