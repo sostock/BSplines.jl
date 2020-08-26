@@ -106,11 +106,28 @@ When calculating values of B-splines or their derivatives via the `Derivative{N}
 In the case of the `AllDerivatives{N}` argument, it must be a matrix of size `(order(basis), N)`.
 In any case, `dest` must not have offset axes itself.
 
-### Specifying the relevant interval
+### Improving performance
 
-Evaluating B-splines at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector.
-The `bsplines` and `bsplines!` functions use the [`intervalindex`](@ref) function to find this index.
-If the index is already known, it can be specified with the `leftknot` keyword argument to `bsplines`/`bsplines!` in order to speed up the computation.
+The `bsplines` and `bsplines!` functions accept two optional keyword arguments (one of them only when evaluating derivatives) can be used to speed up the evaluation of splines:
+
+* `derivspace`:
+  When evaluating derivatives, coefficients are stored in a matrix of size `(order(basis), order(basis))`.
+  In order to avoid allocating a new matrix every time, a pre-allocated matrix can be supplied with the `derivspace` argument. It can only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or `AllDerivatives(N)` where `N ≥ 2`.
+* `leftknot`:
+  Evaluating B-splines at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector.
+  The `bsplines` and `bsplines!` functions use the [`intervalindex`](@ref) function to find this index.
+  If the index is already known, it can be specified with the `leftknot` keyword argument.
+
+```@repl basis
+using BenchmarkTools
+basis = BSplineBasis(4, 0:5);
+dest = zeros(order(basis));
+space = zeros(order(basis), order(basis));
+left = intervalindex(basis, 2.5);
+@btime bsplines!($dest, $basis, 2.5, Derivative(1));
+@btime bsplines!($dest, $basis, 2.5, Derivative(1), derivspace=$space);
+@btime bsplines!($dest, $basis, 2.5, Derivative(1), derivspace=$space, leftknot=$left);
+```
 
 ## Constructing knot vectors
 

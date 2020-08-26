@@ -3,7 +3,7 @@ module BSplines
 import LinearAlgebra
 
 using Base: @propagate_inbounds, has_offset_axes
-using LinearAlgebra: I, ldiv!, lmul!, rdiv!, rmul!
+using LinearAlgebra: I, diagind, ldiv!, lmul!, rdiv!, rmul!
 using OffsetArrays: OffsetArray
 
 export
