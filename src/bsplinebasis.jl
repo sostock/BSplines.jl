@@ -430,25 +430,30 @@ julia> support(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
 support(b::BSplineBasis) = (bps = breakpoints(b); (first(bps), last(bps)))
 
 """
-    bsplines(basis, x, [::Derivative{N}]; kwargs...)
+    bsplines(basis, x[, derivative]; kwargs...)
 
-Calculate the values of all non-zero B-splines of `basis`, or their `N`-th derivatives, at
-`x`.
+Calculate the values and/or derivatives of all non-zero B-splines of `basis` at `x`.
 
-If any B-splines are non-zero at `x`, return an `OffsetVector` that contains the value of
-the `i`-th B-spline (or its `N`-th derivative) at the index `i`. If no B-splines are
-non-zero at `x`, return `nothing`.
+If all B-splines of `basis` are zero at `x`, `nothing` is returned. If any B-splines are
+non-zero at `x`, an `OffsetArray` is returned. Its size and contents depend on the optional
+`derivative` argument:
+* If `derivative` is not given, the returned `OffsetArray` contains the value of the `i`-th
+  B-spline at the index `i`.
+* If `derivative == Derivative(N)`, the returned `OffsetArray` contains the `N`-th
+  derivative of the `i`-th B-spline at the index `i`.
+* If `derivative == AllDerivatives(N)`, the returned `OffsetArray` contains the `m`-th
+  derivative (`0 ≤ m < N`) of the `i`-th B-spline at the index `i, m`.
 
 Two optional keyword arguments can be used to increase performance:
-* `leftknot`: If the index of the relevant interval (i.e.,
-  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
-  `leftknot` keyword.
 * `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
   size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
   avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
   only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
-  `AllDerivatives(N)` where `N ≥ 2`. To also pre-allocate the vector that contains the
+  `AllDerivatives(N)` where `N ≥ 2`. To also pre-allocate the array that contains the
   result, use the [`bsplines!`](@ref) function instead.
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
 
 # Examples
 
@@ -477,34 +482,6 @@ julia> bsplines(basis, 17//5, leftknot=7)
  202//375
  307//750
    2//125
-```
-"""
-bsplines(basis, x, ::Derivative=NoDerivative(); kwargs...)
-
-"""
-    bsplines(basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
-
-Calculate all `m`-th derivatives (`0 ≤ m < N`) of all non-zero B-splines of `basis` at `x`.
-
-If any B-splines are non-zero at `x`, return an `OffsetMatrix` that contains the `m`-th
-derivative of the `i`-th B-spline at the index `i, m`. If no B-splines are non-zero at `x`,
-return `nothing`.
-
-Two optional keyword arguments can be used to increase performance:
-* `leftknot`: If the index of the relevant interval (i.e.,
-  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
-  `leftknot` keyword.
-* `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
-  size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
-  avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
-  only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
-  `AllDerivatives(N)` where `N ≥ 2`. To also pre-allocate the vector that contains the
-  result, use the [`bsplines!`](@ref) function instead.
-
-# Examples
-
-```jldoctest
-julia> basis = BSplineBasis(4, 0:5);
 
 julia> bsplines(basis, 2.4, AllDerivatives(3))
 4×3 OffsetArray(::Array{Float64,2}, 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
@@ -512,46 +489,54 @@ julia> bsplines(basis, 2.4, AllDerivatives(3))
  0.538667   -0.56  -0.8
  0.414667    0.66  -0.2
  0.0106667   0.08   0.4
-
-julia> bsplines(basis, 6.0, AllDerivatives(3)) # returns nothing
-
-julia> bsplines(basis, 17//5, AllDerivatives(4), leftknot=7)
-4×4 OffsetArray(::Array{Rational{Int64},2}, 4:7, 0:3) with eltype Rational{Int64} with indices 4:7×0:3:
-   9//250   -9//50   3//5  -1//1
- 202//375  -14//25  -4//5   3//1
- 307//750   31//50  -2//5  -7//2
-   2//125    3//25   3//5   3//2
 ```
 """
-bsplines(basis, x, ::AllDerivatives; kwargs...)
+function bsplines(basis::BSplineBasis, x, drv=NoDerivative();
+                  leftknot=intervalindex(basis, x), derivspace=nothing)
+    check_intervalindex(basis, x, leftknot)
+    check_derivspace(basis, drv, derivspace)
+    leftknot === nothing && return nothing
+    dest = bsplines_destarray(basis, x, drv, derivspace)
+    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
+    bsplines_offsetarray(dest, offset, drv)
+end
 
 """
-    bsplines!(dest, basis, x, [::Derivative{N}]; leftknot=intervalindex(basis, x))
+    bsplines!(dest, basis, x[, derivative]; kwargs...)
 
-Calculate the values of all non-zero B-splines of `basis`, or their `N`-th derivatives, at
-`x` in-place (i.e., in `dest`). The destination vector `dest` must have the length
-`order(basis)`.
+Calculate the values and/or derivatives of all non-zero B-splines of `basis` at `x` in-place
+(i.e., in `dest`).
 
-If any B-splines are non-zero at `x`, return an `OffsetVector` that wraps `dest` and
-contains the value of the `i`-th B-spline (or its `N`-th derivative) at the index `i`. If no
-B-splines are non-zero at `x`, return `nothing`.
+If all B-splines of `basis` are zero at `x`, `nothing` is returned. If any B-splines are
+non-zero at `x`, an `OffsetArray` that wraps `dest` is returned. Its size and contents
+depend on the optional `derivative` argument:
+* If `derivative` is not given, the returned `OffsetArray` contains the value of the `i`-th
+  B-spline at the index `i`. In this case, `dest` must be a vector of length `order(basis)`.
+* If `derivative == Derivative(N)`, the returned `OffsetArray` contains the `N`-th
+  derivative of the `i`-th B-spline at the index `i`. Again, `dest` must be a vector of
+  length `order(basis)`.
+* If `derivative == AllDerivatives(N)`, the returned `OffsetArray` contains the `m`-th
+  derivative (`0 ≤ m < N`) of the `i`-th B-spline at the index `i, m`. In this case, `dest`
+  must be a matrix of size `(order(basis), N)`.
 
 Two optional keyword arguments can be used to increase performance:
-* `leftknot`: If the index of the relevant interval (i.e.,
-  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
-  `leftknot` keyword.
 * `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
   size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
   avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
   only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
   `AllDerivatives(N)` where `N ≥ 2`.
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
 
 # Examples
 
 ```jldoctest
+julia> basis = BSplineBasis(4, 0:5);
+
 julia> dest = zeros(4);
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 2.4)
+julia> bsplines!(dest, basis, 2.4)
 4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667
@@ -560,39 +545,12 @@ julia> bsplines!(dest, BSplineBasis(4, 0:5), 2.4)
 
 julia> parent(ans) === dest
 true
-```
-"""
-bsplines!(dest, basis, x, ::Derivative=NoDerivative(); kwargs...)
 
-"""
-    bsplines!(dest, basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
+julia> bsplines!(dest, basis, -1.0) # returns nothing
 
-Calculate all `m`-th derivatives (`0 ≤ m < N`) of all non-zero B-splines of `basis` at `x`
-in-place (i.e., in `dest`). The destination matrix `dest` must have the size
-`(order(basis), N)`.
-
-If any B-splines are non-zero at `x`, return an `OffsetMatrix` that wraps `dest` and
-contains the `m`-th derivative of the `i`-th B-spline at the index `i, m`. If no B-splines
-are non-zero at `x`, return `nothing`.
-
-Two optional keyword arguments can be used to increase performance:
-* `leftknot`: If the index of the relevant interval (i.e.,
-  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
-  `leftknot` keyword.
-* `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
-  size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
-  avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
-  only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
-  `AllDerivatives(N)` where `N ≥ 2`.
-
-# Examples
-
-```jldoctest
 julia> dest = zeros(4, 3);
 
-julia> bsplines!(dest, BSplineBasis(4, 0:5), -1.0, AllDerivatives(3)) # returns nothing
-
-julia> bsplines!(dest, BSplineBasis(4, 0:5), 3.75, AllDerivatives(3))
+julia> bsplines!(dest, basis, 3.75, AllDerivatives(3))
 4×3 OffsetArray(::Array{Float64,2}, 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
  0.00260417  -0.03125    0.25
  0.315104    -0.65625    0.25
@@ -603,14 +561,12 @@ julia> parent(ans) === dest
 true
 ```
 """
-bsplines!(dest, basis, x, ::AllDerivatives; kwargs...)
-
-function bsplines(basis::BSplineBasis, x, drv=NoDerivative();
-                  leftknot=intervalindex(basis, x), derivspace=nothing)
+function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative();
+                   leftknot=intervalindex(basis, x), derivspace=nothing)
     check_intervalindex(basis, x, leftknot)
+    check_destarray_axes(dest, basis, drv)
     check_derivspace(basis, drv, derivspace)
     leftknot === nothing && return nothing
-    dest = bsplines_destarray(basis, x, drv, derivspace)
     offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
     bsplines_offsetarray(dest, offset, drv)
 end
@@ -637,16 +593,6 @@ bsplines_destarray(T, basis, ::AllDerivatives{N}) where N = Matrix{T}(undef, ord
 
 bsplines_offsetarray(arr, offset, ::Derivative)     = OffsetArray(arr, offset)
 bsplines_offsetarray(arr, offset, ::AllDerivatives) = OffsetArray(arr, offset, -1)
-
-function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative();
-                   leftknot=intervalindex(basis, x), derivspace=nothing)
-    check_intervalindex(basis, x, leftknot)
-    check_destarray_axes(dest, basis, drv)
-    check_derivspace(basis, drv, derivspace)
-    leftknot === nothing && return nothing
-    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
-    bsplines_offsetarray(dest, offset, drv)
-end
 
 function check_destarray_axes(dest, basis, drv)
     got = axes(dest)

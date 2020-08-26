@@ -58,9 +58,9 @@ using BenchmarkTools
 spl = Spline(BSplineBasis(4, 0:5), rand(8));
 work = zeros(order(spl));
 left = intervalindex(basis(spl), 2.5);
-@btime $spl(2.5)
-@btime $spl(2.5, workspace=$work)
-@btime $spl(2.5, workspace=$work, leftknot=$left)
+@btime $spl(2.5);
+@btime $spl(2.5, workspace=$work);
+@btime $spl(2.5, workspace=$work, leftknot=$left);
 ```
 
 ## Arithmetic with `Spline`s
