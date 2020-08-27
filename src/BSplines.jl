@@ -3,7 +3,7 @@ module BSplines
 import LinearAlgebra
 
 using Base: @propagate_inbounds, has_offset_axes
-using LinearAlgebra: I, ldiv!, lmul!, rdiv!, rmul!
+using LinearAlgebra: I, diagind, ldiv!, lmul!, rdiv!, rmul!
 using OffsetArrays: OffsetArray
 
 export
@@ -50,7 +50,7 @@ bspline_returntype(spline::Spline, xtype::Type) =
 
 function bspline_returntype(knottype::Type, types::Type...)
     T = promote_type(knottype, types...)
-    typeof(one(T)/one(knottype))
+    typeof(oneunit(T)/oneunit(knottype))
 end
 
 
@@ -75,7 +75,7 @@ Spline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}},Array{Float64,1
  basis: 9-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
   order: 5
   knots: [0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5]
- coeffs: [0.0, 0.24963094468700395, 0.7525104872191076, 1.229735980709192, 0.7385208497317045, -0.4328168377896504, -1.0125409246826416, -1.029692234224304, -0.9589242746631385]
+ coeffs: [0.0, 0.249631, 0.75251, 1.22974, 0.738521, -0.432817, -1.01254, -1.02969, -0.958924]
 
 julia> spl(π/4)
 0.7071028397621081
@@ -109,7 +109,7 @@ Spline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}},Array{Float64,1
  basis: 13-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
   order: 5
   knots: [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10]
- coeffs: [0.0, 0.2480193113006778, 0.5968722382485209, 0.9466707785821219, 1.2689430722820556, 1.5140484163988175, 1.7114875128056504, 1.8766572742486973, 2.0185639127626325, 2.1429230073972407, 2.2259183994808813, 2.2775846911059, 2.302585092994046]
+ coeffs: [0.0, 0.248019, 0.596872, 0.946671, 1.26894, 1.51405, 1.71149, 1.87666, 2.01856, 2.14292, 2.22592, 2.27758, 2.30259]
 
 julia> spl(float(ℯ))
 0.9999766059171411

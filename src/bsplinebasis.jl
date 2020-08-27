@@ -69,9 +69,7 @@ function Base.checkbounds(b::BSplineBasis, i)
 end
 Base.checkbounds(::Type{Bool}, b::BSplineBasis, i) = checkindex(Bool, eachindex(b), i)
 
-Base.eachindex(b::BSplineBasis) = Base.OneTo(lastindex(b))
-
-Base.eltype(b::BSplineBasis) = BSpline{typeof(b)}
+Base.eltype(T::Type{<:BSplineBasis}) = BSpline{T}
 
 Base.length(b::BSplineBasis) = Int(length(knots(b))) - order(b)
 
@@ -80,7 +78,7 @@ Base.iterate(b::BSplineBasis, i=1) = i-1 < length(b) ? (@inbounds b[i], i+1) : n
 Base.firstindex(b::BSplineBasis) = 1
 Base.lastindex(b::BSplineBasis)  = length(b)
 
-Base.keys(b::BSplineBasis) = eachindex(b)
+Base.keys(b::BSplineBasis) = Base.OneTo(lastindex(b))
 
 @propagate_inbounds function Base.getindex(b::BSplineBasis, i::Integer)
     @boundscheck checkbounds(b, i)
@@ -124,10 +122,14 @@ for f = (:getindex, :view)
     end
 end
 
+Base.iterate(r::Iterators.Reverse{<:BSplineBasis}, i=length(r)) =
+    iszero(i) ? nothing : (@inbounds r.itr[i], i-1)
+
 function Base.show(io::IO, ::MIME"text/plain", basis::BSplineBasis)
     summary(io, basis); println(io, ':')
     println(io, " order: ", order(basis))
-    print(io, " knots: ", knots(basis))
+    print(io, " knots: ")
+    show(IOContext(io, :compact=>true), knots(basis))
 end
 
 Base.summary(io::IO, basis::BSplineBasis) =
@@ -377,15 +379,30 @@ Return an iterator that produces the numbers
 IntervalIndices(vec::T, indices, offset) where T<:AbstractVector{<:Real} =
     IntervalIndices{T}(vec, indices, offset)
 
-Base.IteratorSize(::IntervalIndices) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:IntervalIndices}) = Base.SizeUnknown()
 
-Base.eltype(i::IntervalIndices) = Int
+Base.eltype(::Type{<:IntervalIndices}) = Int
 
 function Base.iterate(i::IntervalIndices, (index,value)=(first(i.indices),i.vec[first(i.indices)]))
     while index < last(i.indices)
         nextindex = index + 1
         nextvalue = i.vec[nextindex]
         value < nextvalue && return (index+i.offset, (nextindex, nextvalue))
+        index = nextindex
+    end
+    return nothing
+end
+
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices})
+    isempty(i.itr.indices) && return nothing
+    index = last(i.itr.indices)
+    iterate(i, (index,i.itr.vec[index]))
+end
+function Base.iterate(i::Iterators.Reverse{<:IntervalIndices}, (index,value))
+    while index > first(i.itr.indices)
+        nextindex = index - 1
+        nextvalue = i.itr.vec[nextindex]
+        value > nextvalue && return (nextindex+i.itr.offset, (nextindex, nextvalue))
         index = nextindex
     end
     return nothing
@@ -528,250 +545,169 @@ julia> support(basis)
 support(b::BSplineBasis) = (first(knots(b)), last(knots(b)))
 
 """
-    bsplines(basis, x; leftknot=intervalindex(basis, x))
+    bsplines(basis, x[, derivative]; kwargs...)
 
-Calculate the values of all non-zero B-splines of `basis` at `x`.
+Calculate the values and/or derivatives of all non-zero B-splines of `basis` at `x`.
 
-If any B-splines are non-zero at `x`, an `OffsetVector` is returned that contains the value
-of the `i`-th B-spline at the index `i`. If no B-splines are non-zero at `x`, `nothing` is
-returned.
+If all B-splines of `basis` are zero at `x`, `nothing` is returned. If any B-splines are
+non-zero at `x`, an `OffsetArray` is returned. Its size and contents depend on the optional
+`derivative` argument:
+* If `derivative` is not given, the returned `OffsetArray` contains the value of the `i`-th
+  B-spline at the index `i`.
+* If `derivative == Derivative(N)`, the returned `OffsetArray` contains the `N`-th
+  derivative of the `i`-th B-spline at the index `i`.
+* If `derivative == AllDerivatives(N)`, the returned `OffsetArray` contains the `m`-th
+  derivative (`0 ≤ m < N`) of the `i`-th B-spline at the index `i, m`.
 
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
+Two optional keyword arguments can be used to increase performance:
+* `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
+  size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
+  avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
+  only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
+  `AllDerivatives(N)` where `N ≥ 2`. To also pre-allocate the array that contains the
+  result, use the [`bsplines!`](@ref) function instead.
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
 
 # Examples
 
 ```jldoctest
-julia> basis4 = BSplineBasis(4, breakpoints=0:5);
+julia> basis = BSplineBasis(4, breakpoints=0:5);
 
-julia> bsplines(basis4, 2.4)
+julia> bsplines(basis, 2.4)
 4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667 
  0.41466666666666663
  0.01066666666666666
 
-julia> bsplines(basis4, 6) # returns nothing
+julia> bsplines(basis, 2.4, Derivative(1), derivspace=zeros(4,4))
+4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+ -0.18000000000000005
+ -0.5599999999999999
+  0.66
+  0.07999999999999996
 
-julia> basis3 = BSplineBasis(3, breakpoints=0:5);
+julia> bsplines(basis, 6) # returns nothing
 
-julia> bsplines(basis3, 17//5, leftknot=6)
-3-element OffsetArray(::Array{Rational{Int64},1}, 4:6) with eltype Rational{Int64} with indices 4:6:
-  9//50
- 37//50
-  2//25
-```
-"""
-bsplines(basis, x; kwargs...)
-
-"""
-    bsplines(basis, x, ::Derivative{N}; leftknot=intervalindex(basis, x))
-
-Calculate the `N`-th derivatives of all B-splines of `basis` that are non-zero at `x`.
-
-If any B-splines are non-zero at `x`, an `OffsetVector` is returned that contains the `N`-th
-derivative of the `i`-th B-spline at the index `i`. If no B-splines are non-zero at `x`,
-`nothing` is returned.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-# Examples
-
-```jldoctest
-julia> basis3 = BSplineBasis(3, breakpoints=0:5);
-
-julia> bsplines(basis3, 2.4, Derivative(1))
-3-element OffsetArray(::Array{Float64,1}, 3:5) with eltype Float64 with indices 3:5:
- -0.6000000000000001 
-  0.20000000000000018
-  0.3999999999999999 
-
-julia> bsplines(basis3, 6, Derivative(1)) # returns nothing
-
-julia> basis4 = BSplineBasis(4, breakpoints=0:5);
-
-julia> bsplines(basis4, 17//5, Derivative(2), leftknot=7)
+julia> bsplines(basis, 17//5, leftknot=7)
 4-element OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
-  3//5
- -4//5
- -2//5
-  3//5
+   9//250
+ 202//375
+ 307//750
+   2//125
+
+julia> bsplines(basis, 2.4, AllDerivatives(3))
+4×3 OffsetArray(::Array{Float64,2}, 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
+ 0.036      -0.18   0.6
+ 0.538667   -0.56  -0.8
+ 0.414667    0.66  -0.2
+ 0.0106667   0.08   0.4
 ```
 """
-bsplines(basis, x, ::Derivative; kwargs...)
+function bsplines(basis::BSplineBasis, x, drv=NoDerivative();
+                  leftknot=intervalindex(basis, x), derivspace=nothing)
+    check_intervalindex(basis, x, leftknot)
+    check_derivspace(basis, drv, derivspace)
+    leftknot === nothing && return nothing
+    dest = bsplines_destarray(basis, x, drv, derivspace)
+    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
+    bsplines_offsetarray(dest, offset, drv)
+end
 
 """
-    bsplines(basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
+    bsplines!(dest, basis, x[, derivative]; kwargs...)
 
-Calculate all `m`-th derivatives (`0 ≤ m < N`) of all B-splines of `basis` that are non-zero
-at `x`.
+Calculate the values and/or derivatives of all non-zero B-splines of `basis` at `x` in-place
+(i.e., in `dest`).
 
-If any B-splines are non-zero at `x`, an `OffsetMatrix` is returned that contains the `m`-th
-derivative of the `i`-th B-spline at the index `i, m`. If no B-splines are non-zero at `x`,
-`nothing` is returned.
+If all B-splines of `basis` are zero at `x`, `nothing` is returned. If any B-splines are
+non-zero at `x`, an `OffsetArray` that wraps `dest` is returned. Its size and contents
+depend on the optional `derivative` argument:
+* If `derivative` is not given, the returned `OffsetArray` contains the value of the `i`-th
+  B-spline at the index `i`. In this case, `dest` must be a vector of length `order(basis)`.
+* If `derivative == Derivative(N)`, the returned `OffsetArray` contains the `N`-th
+  derivative of the `i`-th B-spline at the index `i`. Again, `dest` must be a vector of
+  length `order(basis)`.
+* If `derivative == AllDerivatives(N)`, the returned `OffsetArray` contains the `m`-th
+  derivative (`0 ≤ m < N`) of the `i`-th B-spline at the index `i, m`. In this case, `dest`
+  must be a matrix of size `(order(basis), N)`.
 
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
+Two optional keyword arguments can be used to increase performance:
+* `derivspace`: When calculating derivatives, some coefficients are stored in a matrix of
+  size `(order(basis), order(basis))`. By default, the function allocates a new matrix. To
+  avoid this, a pre-allocated matrix can be supplied with the `derivspace` keyword. It can
+  only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or
+  `AllDerivatives(N)` where `N ≥ 2`.
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
 
 # Examples
 
 ```jldoctest
-julia> basis3 = BSplineBasis(3, breakpoints=0:5);
+julia> basis = BSplineBasis(4, breakpoints=0:5);
 
-julia> bsplines(basis3, 2.4, AllDerivatives(3))
-3×3 OffsetArray(::Array{Float64,2}, 3:5, 0:2) with eltype Float64 with indices 3:5×0:2:
- 0.18  -0.6   1.0
- 0.74   0.2  -2.0
- 0.08   0.4   1.0
-
-julia> bsplines(basis3, 6.0, AllDerivatives(3)) # returns nothing
-
-julia> basis4 = BSplineBasis(4, breakpoints=0:5);
-
-julia> bsplines(basis4, 17//5, AllDerivatives(4), leftknot=7)
-4×4 OffsetArray(::Array{Rational{Int64},2}, 4:7, 0:3) with eltype Rational{Int64} with indices 4:7×0:3:
-   9//250   -9//50   3//5  -1//1
- 202//375  -14//25  -4//5   3//1
- 307//750   31//50  -2//5  -7//2
-   2//125    3//25   3//5   3//2
-```
-"""
-bsplines(basis, x, ::AllDerivatives; kwargs...)
-
-"""
-    bsplines!(dest, basis, x; leftknot=intervalindex(basis, x)) -> offset
-
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination vector `dest` must have the length `order(basis)`.
-
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the value of the
-`i`-th B-spline is written to `dest[i-offset]`. If no B-splines are non-zero at `x`,
-`nothing` is returned and `dest` is not mutated.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-# Examples
-
-```jldoctest
-julia> dest = zeros(4); basis = BSplineBasis(4, breakpoints=0:5);
-
-julia> bsplines!(dest, basis, 6.0) # returns nothing
+julia> dest = zeros(4);
 
 julia> bsplines!(dest, basis, 2.4)
-2
-
-julia> dest # dest[i] contains value of (i+2)-th B-spline
-4-element Array{Float64,1}:
+4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
- 0.5386666666666667 
+ 0.5386666666666667
  0.41466666666666663
  0.01066666666666666
-```
-"""
-bsplines!(dest, basis, x; kwargs...)
 
-"""
-    bsplines!(dest, basis, x, ::Derivative{N}; leftknot=intervalindex(basis, x))
+julia> parent(ans) === dest
+true
 
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination vector `dest` must have the length `order(basis)`.
+julia> bsplines!(dest, basis, -1.0) # returns nothing
 
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the `N`-th
-derivative of the `i`-th B-spline is written to `dest[i-offset]`. If no B-splines are
-non-zero at `x`, `nothing` is returned and `dest` is not mutated.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-# Examples
-
-```jldoctest
-julia> dest = zeros(4); basis = BSplineBasis(4, breakpoints=0:5);
-
-julia> bsplines!(dest, basis, 7.0, Derivative(2)) # returns nothing
-
-julia> bsplines!(dest, basis, 4.2, Derivative(2))
-4
-
-julia> dest # dest[i] contains 2nd derivative of (i+4)-th B-spline
-4-element Array{Float64,1}:
-  0.7999999999999998
- -1.399999999999999 
- -0.6000000000000019
-  1.200000000000001 
-```
-"""
-bsplines!(dest, basis, x, ::Derivative; kwargs...)
-
-"""
-    bsplines!(dest, basis, x, ::AllDerivatives{N}; leftknot=intervalindex(basis, x))
-
-Calculate the values of all B-splines of `basis` that are non-zero at `x` and store the
-result in `dest`. The destination matrix `dest` must have the dimensions `order(basis)`×`N`.
-
-If any B-splines are non-zero at `x`, an integer `offset` is returned and the `m`-th
-derivative of the `i`-th B-spline is written to `dest[i-offset, m+1]`. If no B-splines are
-non-zero at `x`, `nothing` is returned and `dest` is not mutated.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-# Examples
-
-```jldoctest
-julia> dest = zeros(4, 3); basis = BSplineBasis(4, breakpoints=0:5);
-
-julia> bsplines!(dest, basis, -1.0, AllDerivatives(3)) # returns nothing
+julia> dest = zeros(4, 3);
 
 julia> bsplines!(dest, basis, 3.75, AllDerivatives(3))
-3
-
-julia> dest # dest[i,m] contains (m-1)-th derivative of (i+3)-th B-spline
-4×3 Array{Float64,2}:
- 0.00260417  -0.03125    0.25 
- 0.315104    -0.65625    0.25 
+4×3 OffsetArray(::Array{Float64,2}, 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
+ 0.00260417  -0.03125    0.25
+ 0.315104    -0.65625    0.25
  0.576823     0.265625  -1.625
  0.105469     0.421875   1.125
+
+julia> parent(ans) === dest
+true
 ```
 """
-bsplines!(dest, basis, x, ::AllDerivatives; kwargs...)
-
-function bsplines(basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervalindex(basis, x))
+function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative();
+                   leftknot=intervalindex(basis, x), derivspace=nothing)
     check_intervalindex(basis, x, leftknot)
-    leftknot === nothing && return nothing
-    dest = bsplines_destarray(basis, x, drv)
-    offset = @inbounds _bsplines!(dest, basis, x, leftknot, drv)
-    bsplines_offsetarray(dest, basis, leftknot, offset, drv)
-end
-
-function bsplines_offsetarray(arr, basis, leftknot, offset, ::Derivative)
-    arrinds, newoffset = bsplines_indices_offset(basis, leftknot, offset)
-    OffsetArray(arr[arrinds], newoffset)
-end
-function bsplines_offsetarray(arr, basis, leftknot, offset, ::AllDerivatives)
-    arrinds, newoffset = bsplines_indices_offset(basis, leftknot, offset)
-    OffsetArray(arr[arrinds,:], newoffset, -1)
-end
-
-function bsplines_indices_offset(basis, leftknot, offset)
-    minind = max(1, leftknot-order(basis)+1)
-    maxind = min(leftknot, length(basis))
-    minind-offset:maxind-offset, minind-1
-end
-
-function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative(); leftknot=intervalindex(basis, x))
-    check_intervalindex(basis, x, leftknot)
-    leftknot === nothing && return nothing
     check_destarray_axes(dest, basis, drv)
-    @inbounds _bsplines!(dest, basis, x, leftknot, drv)
+    check_derivspace(basis, drv, derivspace)
+    leftknot === nothing && return nothing
+    offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
+    bsplines_offsetarray(dest, offset, drv)
 end
 
-bsplines_destarray(basis, x, ::Derivative) =
-    Vector{bspline_returntype(basis, x)}(undef, order(basis))
-bsplines_destarray(basis, x, ::AllDerivatives{N}) where N =
-    Matrix{bspline_returntype(basis, x)}(undef, order(basis), N)
+check_derivspace(basis, drv::NoDerivUnion, ::Nothing) = nothing
+check_derivspace(basis, drv::NoDerivUnion, derivspace) =
+    throw(ArgumentError("derivspace keyword cannot be used with $drv."))
+
+check_derivspace(basis, drv, ::Nothing) = nothing
+function check_derivspace(basis, drv, derivspace)
+    got = axes(derivspace)
+    exp = (Base.OneTo(order(basis)), Base.OneTo(order(basis)))
+    if got != exp
+        throw(DimensionMismatch("derivspace array has wrong axes: expected $exp, got $got"))
+    end
+    nothing
+end
+
+bsplines_destarray(basis, x, drv, derivspace) = bsplines_destarray(eltype(derivspace), basis, drv)
+bsplines_destarray(basis, x, drv, ::Nothing)  = bsplines_destarray(bspline_returntype(basis, x), basis, drv)
+
+bsplines_destarray(T, basis, ::Derivative)                = Vector{T}(undef, order(basis))
+bsplines_destarray(T, basis, ::AllDerivatives{N}) where N = Matrix{T}(undef, order(basis), N)
+
+bsplines_offsetarray(arr, offset, ::Derivative)     = OffsetArray(arr, offset)
+bsplines_offsetarray(arr, offset, ::AllDerivatives) = OffsetArray(arr, offset, -1)
 
 function check_destarray_axes(dest, basis, drv)
     got = axes(dest)
@@ -791,11 +727,11 @@ destarray_axes(basis, ::AllDerivatives{N}) where N = (Base.OneTo(order(basis)), 
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::NoDerivUnion)
+@propagate_inbounds function _bsplines!(dest, _, basis, x, leftknot::Integer, ::NoDerivUnion)
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
-    dest[1] = one(eltype(dest))
+    dest[1] = oneunit(eltype(dest))
     for j = 1:k-1
         iterate_bsplines!(dest, dest, t, j, xtyped, leftknot)
     end
@@ -808,7 +744,7 @@ end
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::AllDerivatives{N}) where N
+@propagate_inbounds function _bsplines!(dest, derivspace, basis, x, leftknot::Integer, ::AllDerivatives{N}) where N
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
@@ -817,7 +753,7 @@ end
     dest[:, N′+1:N] .= zero(eltype(dest))
     # Successively calculate values of B-splines and store them in dest
     lastcol = @view dest[N′:k, N′]
-    lastcol[1] = one(eltype(dest))
+    lastcol[1] = oneunit(eltype(dest))
     for j = 1:k-N′
         iterate_bsplines!(lastcol, lastcol, t, j, xtyped, leftknot)
     end
@@ -828,7 +764,7 @@ end
         iterate_bsplines!(newcol, oldcol, t, j, xtyped, leftknot)
     end
     # Successively calculate coefficients for derivatives and combine them with B-splines
-    drvcoeffs = Matrix{eltype(dest)}(I, k, k)
+    drvcoeffs = prepare_drvcoeffs(eltype(dest), order(basis), derivspace)
     for col = 2:N′
         # Column `col` contains `col-1`-th derivatives
         iterate_derivatives!(drvcoeffs, t, k, col-1, leftknot)
@@ -843,13 +779,22 @@ end
     return leftknot-k
 end
 
+prepare_drvcoeffs(T, k, ::Nothing) = Matrix{T}(I, k, k)
+function prepare_drvcoeffs(_, k, derivspace)
+    fill!(derivspace, 0)
+    for i = diagind(derivspace)
+        derivspace[i] = 1
+    end
+    derivspace
+end
+
 # The implementation of this method (and the methods iterate_bsplines! and
 # iterate_derivatives! it calls) is adapted from the Fortran subroutine BSPLVD from Carl de
 # Boor’s book *A practical Guide to Splines* [^deBoor1978].
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _bsplines!(dest, basis::BSplineBasis, x, leftknot::Integer, ::Derivative{N}) where N
+@propagate_inbounds function _bsplines!(dest, derivspace, basis, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
     xtyped = convert(eltype(dest), x)
@@ -859,12 +804,12 @@ end
     else
         # Calculate B-splines of order k-N and store them in dest[N+1:k]
         col = @view dest[N+1:k]
-        col[1] = one(eltype(dest))
+        col[1] = oneunit(eltype(dest))
         for j = 1:k-N-1
             iterate_bsplines!(col, col, t, j, xtyped, leftknot)
         end
         # Calculate coefficients for derivatives and combine them with B-splines
-        drvcoeffs = Matrix{eltype(dest)}(I, k, k)
+        drvcoeffs = prepare_drvcoeffs(eltype(dest), order(basis), derivspace)
         for drv = 1:N
             iterate_derivatives!(drvcoeffs, t, k, drv, leftknot)
         end
@@ -930,8 +875,8 @@ function basismatrix(basis::BSplineBasis, xvalues; indices=Colon())
     checkbounds(Bool, basis, indices) || throw(ArgumentError("invalid indices for basis: $indices"))
     T = bspline_returntype(basis, eltype(xvalues))
     dest = zeros(T, length(xvalues), length_indices(basis, indices))
-    workspace = similar(dest, order(basis))
-    _basismatrix!(dest, workspace, basis, xvalues, indices)
+    derivspace = similar(dest, order(basis))
+    _basismatrix!(dest, derivspace, basis, xvalues, indices)
     dest
 end
 
@@ -975,10 +920,9 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, indices::A
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
-        bindices = boffset .+ axes(workspace, 1)
-        for bindex = bindices ∩ indices
-            dest[xindex, bindex-indicesoffset] = workspace[bindex-boffset]
+        bspl = bsplines!(workspace, basis, x, leftknot=leftknot)
+        for index = axes(bspl, 1) ∩ indices
+            dest[xindex, index-indicesoffset] = bspl[index]
         end
     end
 end
@@ -989,9 +933,9 @@ function _basismatrix!(dest, workspace, basis::BSplineBasis, xvalues, ::Colon)
         leftknot = intervalindex(basis, x, start)
         @assert leftknot !== nothing "xvalue outside of the support of basis: $x."
         start = leftknot
-        boffset = bsplines!(workspace, basis, x, leftknot=leftknot)
-        for index = axes(workspace, 1)
-            dest[xindex, index+boffset] = workspace[index]
+        bspl = bsplines!(workspace, basis, x, leftknot=leftknot)
+        for index = axes(bspl, 1)
+            dest[xindex, index] = bspl[index]
         end
     end
 end

@@ -88,33 +88,46 @@ bsplines(basis, 4, AllDerivatives(3)) # calculate zeroth, first and second deriv
 ### Pre-allocating output arrays
 
 The `bsplines` function allocates a new array to return the values (except when it returns `nothing`).
-In order to write the values to a pre-allocated array instead, the [`bsplines!`](@ref) function can be used.
-
-The `bsplines!` function returns an integer `offset` such that the `i`-th element of the destination array contains the value (or derivative) of the `i+offset`-th B-spline.
-In the case of `AllDerivatives{N}`, the destination array contains the `j-1`-th derivative of the `i+offset`-th B-spline at the index `i, j`.
-If the point `x` is outside of the support of the basis, `nothing` is returned instead and the destination array is not mutated.
+In order to use a pre-allocated array instead, the [`bsplines!`](@ref) function can be used: `bsplines!(dest, args...)` behaves like `bsplines(args...)`, but the calculations are done in `dest` and the returned `OffsetArray` is a wrapper around `dest`.
 
 ```@repl basis
 basis = BSplineBasis(4, breakpoints=0:5);
-vec = zeros(4);
-bsplines!(vec, basis, 3.2)
-vec
-bsplines!(vec, basis, 7//3, Derivative(2))
-vec
-mat = zeros(Rational{Int}, 4, 2);
-bsplines!(mat, basis, 4, AllDerivatives(2))
-mat
+destvec = zeros(4);
+bsplines!(destvec, basis, 3.2)
+parent(ans) === destvec
+bsplines!(destvec, basis, 7//3, Derivative(2))
+parent(ans) === destvec
+destmat = zeros(Rational{Int}, 4, 2);
+bsplines!(destmat, basis, 4, AllDerivatives(2))
+parent(ans) === destmat
 ```
 
-When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, the destination must be a vector of length `order(basis)`.
-In the case of the `AllDerivatives{N}` argument, the destination must be a matrix of size `(order(basis), N)`.
-In any case, the destination array must not have offset axes.
+When calculating values of B-splines or their derivatives via the `Derivative{N}` argument, `dest` must be a vector of length `order(basis)`.
+In the case of the `AllDerivatives{N}` argument, it must be a matrix of size `(order(basis), N)`.
+In any case, `dest` must not have offset axes itself.
 
-### Specifying the relevant interval
+### Improving performance
 
-Evaluating B-splines at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector.
-The `bsplines` and `bsplines!` functions use the [`intervalindex`](@ref) function to find this index.
-If the index is already known, it can be specified with the `leftknot` keyword argument to `bsplines`/`bsplines!` in order to speed up the computation.
+The `bsplines` and `bsplines!` functions accept two optional keyword arguments (one of them only when evaluating derivatives) can be used to speed up the evaluation of splines:
+
+* `derivspace`:
+  When evaluating derivatives, coefficients are stored in a matrix of size `(order(basis), order(basis))`.
+  In order to avoid allocating a new matrix every time, a pre-allocated matrix can be supplied with the `derivspace` argument. It can only be used when calculating derivatives, i.e., with `Derivative(N)` where `N ≥ 1` or `AllDerivatives(N)` where `N ≥ 2`.
+* `leftknot`:
+  Evaluating B-splines at a point `x` requires finding the largest index `i` such that `t[i] ≤ x` and `t[i] < t[end]` where `t` is the knot vector.
+  The `bsplines` and `bsplines!` functions use the [`intervalindex`](@ref) function to find this index.
+  If the index is already known, it can be specified with the `leftknot` keyword argument.
+
+```@repl basis
+using BenchmarkTools
+basis = BSplineBasis(4, breakpoints=0:5);
+dest = zeros(order(basis));
+space = zeros(order(basis), order(basis));
+left = intervalindex(basis, 2.5);
+@btime bsplines!($dest, $basis, 2.5, Derivative(1));
+@btime bsplines!($dest, $basis, 2.5, Derivative(1), derivspace=$space);
+@btime bsplines!($dest, $basis, 2.5, Derivative(1), derivspace=$space, leftknot=$left);
+```
 
 ## Constructing knot vectors
 

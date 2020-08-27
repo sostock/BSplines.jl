@@ -16,9 +16,10 @@ function bsplines_exact(funs, x, indices, ::AllDerivatives{N}) where N
 end
 
 # Enlarge x for calculating exact B-splines:
-# * for Integer/Rational: use at least 64-bit to avoid overflow in rational arithmetic
+# * for Integer/Rational: use 64-bit to avoid overflow in rational arithmetic
 # * for floating-point: use BigFloat to minimize error
-maybebig(x::Union{Integer,Rational}) = x*one(Int64)
+maybebig(x::Integer) = Int64(x)
+maybebig(x::Rational) = Rational{Int64}(x)
 maybebig(x::AbstractFloat) = big(x)
 
 @time @testset "bsplines" begin
@@ -50,15 +51,25 @@ maybebig(x::AbstractFloat) = big(x)
                 @test eltype(bsplines(basis, one(xtype), AllDerivatives(2), leftknot=leftknot)) == bspline_type
                 @test eltype(bsplines(basis, one(xtype), Derivative(0), leftknot=leftknot)) == bspline_type
             end
+            for T = [Float32, Float64, BigFloat, Rational{Int128}]
+                derivspace = Matrix{T}(undef, order(basis), order(basis))
+                @test eltype(bsplines(basis, 1, AllDerivatives(2), leftknot=leftknot, derivspace=derivspace)) == T
+                @test eltype(bsplines(basis, 1, Derivative(2), leftknot=leftknot, derivspace=derivspace)) == T
+            end
         end
 
         function test_bsplines_nothing(basis, x)
-            @test bsplines(basis, x)                                      === nothing
-            @test bsplines(basis, x, leftknot=nothing)                    === nothing
-            @test bsplines(basis, x, AllDerivatives(2))                   === nothing
-            @test bsplines(basis, x, AllDerivatives(2), leftknot=nothing) === nothing
-            @test bsplines(basis, x, Derivative(2))                       === nothing
-            @test bsplines(basis, x, Derivative(2), leftknot=nothing)     === nothing
+            derivspace = Matrix{typeof(x)}(undef, order(basis), order(basis))
+            @test bsplines(basis, x)                                                             === nothing
+            @test bsplines(basis, x, leftknot=nothing)                                           === nothing
+            @test bsplines(basis, x, AllDerivatives(2))                                          === nothing
+            @test bsplines(basis, x, AllDerivatives(2), leftknot=nothing)                        === nothing
+            @test bsplines(basis, x, AllDerivatives(2), derivspace=derivspace)                   === nothing
+            @test bsplines(basis, x, AllDerivatives(2), leftknot=nothing, derivspace=derivspace) === nothing
+            @test bsplines(basis, x, Derivative(2))                                              === nothing
+            @test bsplines(basis, x, Derivative(2), leftknot=nothing)                            === nothing
+            @test bsplines(basis, x, Derivative(2), derivspace=derivspace)                       === nothing
+            @test bsplines(basis, x, Derivative(2), leftknot=nothing, derivspace=derivspace)     === nothing
         end
         test_bsplines_nothing(b1, NaN16)
         test_bsplines_nothing(b2, -Inf32)
@@ -73,22 +84,26 @@ maybebig(x::AbstractFloat) = big(x)
         NDERIV = 4
         leftknot = intervalindex(basis, x)
         range = leftknot-order(basis)+1:leftknot
+        bsp0 = bsplines(basis, x, leftknot=leftknot)
+        derivspace = Matrix{eltype(bsp0)}(undef, order(basis), order(basis))
         # AllDerivatives(NDERIVS)
-        bspl_nderiv = bsplines(basis, x, AllDerivatives(NDERIV), leftknot=leftknot)
+        bspl_nderiv = bsplines(basis, x, AllDerivatives(NDERIV), leftknot=leftknot, derivspace=derivspace)
         bspl_nderiv_exact = bsplines_exact(basis_exact, x, range, AllDerivatives(NDERIV))
         if isexact
             @test bspl_nderiv == bspl_nderiv_exact
         else
             @test bspl_nderiv ≈ₑₗ bspl_nderiv_exact
         end
-        # No Derivative
-        @test bsplines(basis, x, leftknot=leftknot) == bspl_nderiv[:,0]
-        # AllDerivatives(N) and Derivative(N) for N = 1:5
+        @test bsp0 == view(bspl_nderiv,:,0)
         for N = 1:(NDERIV-1)
             # Derivative(N)
-            @test bsplines(basis, x, Derivative(N), leftknot=leftknot) == bspl_nderiv[:, N]
+            @test bsplines(basis, x, Derivative(N), leftknot=leftknot, derivspace=derivspace) == view(bspl_nderiv,:,N)
             # AllDerivatives(N)
-            @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(bspl_nderiv[range, 0:N-1], range, 0:N-1)
+            if N == 1
+                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(view(parent(bspl_nderiv),:,1:N), range, 0:N-1)
+            else
+                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot, derivspace=derivspace) == OffsetArray(view(parent(bspl_nderiv),:,1:N), range, 0:N-1)
+            end
         end
     end
 
@@ -135,6 +150,7 @@ maybebig(x::AbstractFloat) = big(x)
     for x = Real[Rational{Int16}(0), 5//7]
         test_bsplines(b7, b7_exact, x, true)
     end
+
     leftknot = intervalindex(b5, 0)
     @test_throws ArgumentError bsplines(b5, 0, leftknot=leftknot-1)
     @test_throws ArgumentError bsplines(b5, 0, leftknot=leftknot+1)
@@ -145,21 +161,37 @@ maybebig(x::AbstractFloat) = big(x)
     @test_throws ArgumentError bsplines(b5, 0, AllDerivatives(1), leftknot=leftknot-1)
     @test_throws ArgumentError bsplines(b5, 0, AllDerivatives(2), leftknot=leftknot+1)
     @test_throws ArgumentError bsplines(b5, 0, AllDerivatives(3), leftknot=nothing)
+    derivspace = Matrix{Float64}(undef, order(b5), order(b5))
+    @test_throws ArgumentError bsplines(b5, 0, Derivative(0), derivspace=derivspace)
+    @test_throws ArgumentError bsplines(b5, 0, AllDerivatives(1), derivspace=derivspace)
+    @test_throws DimensionMismatch bsplines(b5, 0, Derivative(1), derivspace=zeros(order(b5)+1, order(b5)))
+    @test_throws DimensionMismatch bsplines(b5, 0, AllDerivatives(2), derivspace=zeros(order(b5)))
+    @test_throws DimensionMismatch bsplines(b5, 0, AllDerivatives(2), derivspace=zeros(order(b5), order(b5), 1))
     @test bsplines(b5, 0) == bsplines(b5, 0, leftknot=leftknot) == bsplines(b5, 0, Derivative(0), leftknot=leftknot)
-    @test bsplines(b5, 0, Derivative(1)) == bsplines(b5, 0, Derivative(1), leftknot=leftknot)
-    @test bsplines(b5, 0, AllDerivatives(3)) == bsplines(b5, 0, AllDerivatives(3), leftknot=leftknot)
+    @test bsplines(b5, 0, Derivative(1)) == bsplines(b5, 0, Derivative(1), leftknot=leftknot) ==
+                                            bsplines(b5, 0, Derivative(1), derivspace=derivspace) ==
+                                            bsplines(b5, 0, Derivative(1), leftknot=leftknot, derivspace=derivspace)
+    @test bsplines(b5, 0, AllDerivatives(3)) == bsplines(b5, 0, AllDerivatives(3), leftknot=leftknot) ==
+                                                bsplines(b5, 0, AllDerivatives(3), derivspace=derivspace) ==
+                                                bsplines(b5, 0, AllDerivatives(3), leftknot=leftknot, derivspace=derivspace)
 end
 
 @time @testset "bsplines!" begin
     function test_bsplines!_nothing(basis, x)
         dest     = Array{Float64}(undef, order(basis))
         dest_all = Array{Float32}(undef, order(basis), 2)
+        derivspace     = Array{Float64}(undef, order(basis), order(basis))
+        derivspace_all = Array{Float32}(undef, order(basis), order(basis))
         @test bsplines!(dest, basis, x) === nothing
         @test bsplines!(dest, basis, x, leftknot=nothing) === nothing
         @test bsplines!(dest_all, basis, x, AllDerivatives(2)) === nothing
         @test bsplines!(dest_all, basis, x, AllDerivatives(2), leftknot=nothing) === nothing
+        @test bsplines!(dest_all, basis, x, AllDerivatives(2), derivspace=derivspace_all) === nothing
+        @test bsplines!(dest_all, basis, x, AllDerivatives(2), leftknot=nothing, derivspace=derivspace_all) === nothing
         @test bsplines!(dest, basis, x, Derivative(2)) === nothing
         @test bsplines!(dest, basis, x, Derivative(2), leftknot=nothing) === nothing
+        @test bsplines!(dest, basis, x, Derivative(2), derivspace=derivspace) === nothing
+        @test bsplines!(dest, basis, x, Derivative(2), leftknot=nothing, derivspace=derivspace) === nothing
     end
     test_bsplines!_nothing(b1, NaN16)
     test_bsplines!_nothing(b2, -Inf32)
@@ -172,29 +204,41 @@ end
         leftknot = intervalindex(basis, x)
         offset = leftknot-order(basis)
         range = offset+1:leftknot
+        derivspace = Matrix{T}(undef, order(basis), order(basis))
 
         # AllDerivatives(NDERIV)
-        bspl_nderiv = fill(T(Inf), order(basis), NDERIV)
-        bspl_nderiv_exact = parent(bsplines_exact(basis_exact, x, range, AllDerivatives(NDERIV)))
-        off = bsplines!(bspl_nderiv, basis, x, AllDerivatives(NDERIV), leftknot=leftknot)
+        dest0 = fill(T(Inf), order(basis), NDERIV)
+        bspl_nderiv_exact = bsplines_exact(basis_exact, x, range, AllDerivatives(NDERIV))
+        bspl_nderiv = bsplines!(dest0, basis, x, AllDerivatives(NDERIV), leftknot=leftknot, derivspace=derivspace)
         if isexact
-            @test off == offset && bspl_nderiv == bspl_nderiv_exact
+            @test bspl_nderiv == bspl_nderiv_exact
         else
-            @test off == offset && bspl_nderiv ≈ₑₗ bspl_nderiv_exact
+            @test bspl_nderiv ≈ₑₗ bspl_nderiv_exact
         end
+        @test parent(bspl_nderiv) === dest0
 
         # No derivative
-        dest = fill(T(Inf), order(basis))
-        @test bsplines!(dest, basis, x, leftknot=leftknot) == offset && dest == bspl_nderiv[:,1]
+        dest1 = fill(T(Inf), order(basis))
+        bspl1 = bsplines!(dest1, basis, x, leftknot=leftknot)
+        @test bspl1 == view(bspl_nderiv,:,0)
+        @test parent(bspl1) === dest1
 
         # AllDerivatives(N) and Derivative(N) for N = 1:NDERIV-1
         for N = 1:NDERIV-1
             # Derivative(N)
-            dest = fill(T(Inf), order(basis))
-            @test bsplines!(dest, basis, x, Derivative(N), leftknot=leftknot) == offset && dest == bspl_nderiv[:,N+1]
+            fill!(dest1, T(Inf))
+            bspl1 = bsplines!(dest1, basis, x, Derivative(N), leftknot=leftknot, derivspace=derivspace)
+            @test bspl1 == view(bspl_nderiv,:,N)
+            @test parent(bspl1) === dest1
             # AllDerivatives(N)
-            dest = fill(T(Inf), order(basis), N)
-            @test bsplines!(dest, basis, x, AllDerivatives(N), leftknot=leftknot) == offset && dest == bspl_nderiv[:,1:N]
+            dest2 = fill(T(Inf), order(basis), N)
+            if N == 1
+                bspl2 = bsplines!(dest2, basis, x, AllDerivatives(N), leftknot=leftknot)
+            else
+                bspl2 = bsplines!(dest2, basis, x, AllDerivatives(N), leftknot=leftknot, derivspace=derivspace)
+            end
+            @test bspl2 == OffsetArray(view(parent(bspl_nderiv),:,1:N), offset, -1)
+            @test parent(bspl2) === dest2
         end
     end
 
@@ -244,6 +288,7 @@ end
     end
 
     leftknot = intervalindex(b5, 0)
+    derivspace = zeros(order(b5), order(b5))
     @test_throws DimensionMismatch bsplines!(zeros(order(b5)+1), b5, 0)
     @test_throws DimensionMismatch bsplines!(zeros(order(b5)-1), b5, 0, leftknot=leftknot)
     @test_throws DimensionMismatch bsplines!(zeros(order(b5), 0), b5, 0, Derivative(1))
@@ -257,20 +302,48 @@ end
     @test_throws ArgumentError bsplines!(dest, b5, 0, Derivative(0), leftknot=leftknot-1)
     @test_throws ArgumentError bsplines!(dest, b5, 0, Derivative(1), leftknot=leftknot+1)
     @test_throws ArgumentError bsplines!(dest, b5, 0, Derivative(2), leftknot=nothing)
+    @test_throws ArgumentError bsplines!(dest, b5, 0, Derivative(0), derivspace=derivspace)
+    @test_throws DimensionMismatch bsplines!(dest, b5, 0, Derivative(1), derivspace=zeros(order(b5)+1, order(b5)))
+    @test_throws DimensionMismatch bsplines!(dest, b5, 0, Derivative(2), derivspace=zeros(order(b5), order(b5), 1))
+    dest = zeros(order(b5), 1)
+    @test_throws ArgumentError bsplines!(dest, b5, 0, AllDerivatives(1), derivspace=derivspace)
     dest = zeros(order(b5), 3)
     @test_throws ArgumentError bsplines!(dest, b5, 0, AllDerivatives(3), leftknot=leftknot-1)
     @test_throws ArgumentError bsplines!(dest, b5, 0, AllDerivatives(3), leftknot=leftknot+1)
     @test_throws ArgumentError bsplines!(dest, b5, 0, AllDerivatives(3), leftknot=nothing)
+    @test_throws DimensionMismatch bsplines!(dest, b5, 0, Derivative(1), derivspace=zeros(order(b5), order(b5)-1))
+    @test_throws DimensionMismatch bsplines!(dest, b5, 0, Derivative(2), derivspace=zeros(order(b5)))
     dest1 = fill(NaN, order(b5))
     dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0) == bsplines!(dest2, b5, 0, leftknot=leftknot) && dest1 == dest2
-    dest1 = fill(NaN, order(b5))
-    dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0, Derivative(0), leftknot=leftknot) == bsplines!(dest2, b5, 0, leftknot=leftknot) && dest1 == dest2
-    dest1 = fill(NaN, order(b5))
-    dest2 = fill(NaN, order(b5))
-    @test bsplines!(dest1, b5, 0, Derivative(1)) == bsplines!(dest2, b5, 0, Derivative(1), leftknot=leftknot) && dest1 == dest2
+    bsp1 = bsplines!(dest1, b5, 0)
+    bsp2 = bsplines!(dest2, b5, 0, leftknot=leftknot)
+    @test bsp1 == bsp2
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
+    fill!(dest1, NaN)
+    fill!(dest2, NaN)
+    dest3 = fill(NaN, order(b5))
+    dest4 = fill(NaN, order(b5))
+    bsp1 = bsplines!(dest1, b5, 0, Derivative(1))
+    bsp2 = bsplines!(dest2, b5, 0, Derivative(1), leftknot=leftknot)
+    bsp3 = bsplines!(dest3, b5, 0, Derivative(1), derivspace=derivspace)
+    bsp4 = bsplines!(dest4, b5, 0, Derivative(1), leftknot=leftknot, derivspace=derivspace)
+    @test bsp1 == bsp2 == bsp3 == bsp4
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
+    @test parent(bsp3) === dest3
+    @test parent(bsp4) === dest4
     dest1 = fill(NaN, order(b5), 3)
     dest2 = fill(NaN, order(b5), 3)
-    @test bsplines!(dest1, b5, 0, AllDerivatives(3)) == bsplines!(dest2, b5, 0, AllDerivatives(3), leftknot=leftknot) && dest1 == dest2
+    dest3 = fill(NaN, order(b5), 3)
+    dest4 = fill(NaN, order(b5), 3)
+    bsp1 = bsplines!(dest1, b5, 0, AllDerivatives(3))
+    bsp2 = bsplines!(dest2, b5, 0, AllDerivatives(3), leftknot=leftknot)
+    bsp3 = bsplines!(dest3, b5, 0, AllDerivatives(3), derivspace=derivspace)
+    bsp4 = bsplines!(dest4, b5, 0, AllDerivatives(3), leftknot=leftknot, derivspace=derivspace)
+    @test bsp1 == bsp2 == bsp3 == bsp4
+    @test parent(bsp1) === dest1
+    @test parent(bsp2) === dest2
+    @test parent(bsp3) === dest3
+    @test parent(bsp4) === dest4
 end

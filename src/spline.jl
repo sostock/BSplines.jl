@@ -29,11 +29,20 @@ Base.hash(x::Spline, h::UInt) =
     hash(coeffs(x), hash(knots(basis(x)), hash(order(x), hash(:Spline, h))))
 
 function Base.show(io::IO, ::MIME"text/plain", s::Spline)
+    cio = IOContext(io, :compact=>true)
     summary(io, s); println(io, ':')
     print(io, " basis: "); summary(io, basis(s)); println(io, ':')
     println(io, "  order: ", order(basis(s)))
-    println(io, "  knots: ", knots(basis(s)))
-    print(io, " coeffs: ", coeffs(s))
+    print(io, "  knots: ")
+    show(cio, knots(basis(s)))
+    if s isa BSpline
+        print(io, "\n index: ", coeffs(s).index, " (knots: ")
+        show(cio, bsplineknots(s))
+        print(io, ')')
+    else
+        print(io, "\n coeffs: ")
+        show(cio, coeffs(s))
+    end
 end
 
 # Splines act as scalars for broadcasting
@@ -117,14 +126,6 @@ BSpline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}}:
 Base.show(io::IO, x::BSpline) =
     (summary(io, x); print(io, '(', basis(x), ", ", coeffs(x).index, ')'))
 
-function Base.show(io::IO, ::MIME"text/plain", x::BSpline)
-    summary(io, x); println(io, ':')
-    print(io, " basis: "); summary(io, basis(x)); println(io, ':')
-    println(io, "  order: ", order(basis(x)))
-    println(io, "  knots: ", knots(basis(x)))
-    print(io, " index: ", coeffs(x).index, " (knots: ", bsplineknots(x), ')')
-end
-
 Base.summary(io::IO, x::BSpline{B}) where B = print(io, "BSpline{", B, '}')
 
 bsplineknots(x::BSpline) = bsplineknots(basis(x), coeffs(x).index)
@@ -159,15 +160,22 @@ support(s::Spline) = support(basis(s))
 support(b::BSpline) = (t = knots(basis(b)); i = coeffs(b).index; (t[i], t[i+order(b)]))
 
 """
-    splinevalue(spline::Spline, x; leftknot=intervalindex(basis(spline), x))
+    splinevalue(spline::Spline, x[, ::Derivative{N}]; kwargs...)
 
-Calculate the values of `spline` at `x`.
+Calculate the value of `spline`, or its `N`-th derivative, at `x`.
 
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
+Two optional keyword arguments can be used to increase performance:
+* `workspace`: By default, the function allocates a vector of length `order(spline)` in
+  which the calculation is performed. To avoid this, a pre-allocated vector can be supplied
+  with the `workspace` keyword. In this case, the returned value is always of type
+  `eltype(workspace)`.
+* `leftknot`: If the index of the relevant interval (i.e.,
+  `intervalindex(basis(spline), x)`) is already known, it can be supplied with the
+  `leftknot` keyword.
 
 Instead of calling `splinevalue`, a spline object can be called directly:
-`spline(x; [leftknot])` is equivalent to `splinevalue(spline, x; [leftknot])`.
+`spline(x[, Derivative(N)]; kwargs...)` is equivalent to
+`splinevalue(spline, x[, Derivative(N)]; kwargs...)`.
 
 # Examples
 
@@ -177,60 +185,39 @@ julia> spl = Spline(BSplineBasis(4, breakpoints=0:5), 1:8);
 julia> splinevalue(spl, 1.7)
 3.69775
 
+julia> splinevalue(spl, 1.7, Derivative(1))
+1.0225
+
 julia> splinevalue(spl, 3.6, leftknot=7)
 5.618
 
 julia> spl(18//5)
 2809//500
 
-julia> spl(5, leftknot=8)
-8.0
-```
-"""
-splinevalue(::Spline, x; kwargs...)
-
-"""
-    splinevalue(spline::Spline, x, ::Derivative{N}; leftknot=intervalindex(basis(spline), x))
-
-Calculate the value of the `N`-th derivative of `spline` at `x`.
-
-If the index of the relevant interval is already known, it can be supplied with the optional
-`leftknot` keyword to speed up the calculation.
-
-Instead of calling `splinevalue`, a spline object can be called directly:
-`spline(x, Derivative(N); [leftknot])` is equivalent to
-`splinevalue(spline, x, Derivative(N); [leftknot])`.
-
-# Examples
-
-```jldoctest
-julia> spl = Spline(BSplineBasis(4, breakpoints=0:5), 1:8);
-
-julia> splinevalue(spl, 1.7, Derivative(1))
-1.0225
-
-julia> splinevalue(spl, 18//5, Derivative(2), leftknot=7)
-3//10
-
-julia> spl(3.6, Derivative(3))
+julia> spl(3.6, Derivative(3), leftknot=7)
 0.5
-
-julia> spl(5, Derivative(1))
-3.0
 ```
 """
-splinevalue(::Spline, x, ::Derivative; kwargs...)
-
 function splinevalue(spline::Spline, x, drv::Derivative{N}=NoDerivative();
-                     leftknot=intervalindex(basis(spline), x)) where N
+                     leftknot=intervalindex(basis(spline), x),
+                     workspace=nothing) where N
     check_intervalindex(spline, x, leftknot)
-    T = bspline_returntype(spline, x)
+    T = workspace === nothing ? bspline_returntype(spline, x) : eltype(workspace)
     leftknot === nothing && return isnan(x) ? T(NaN) : zero(T)
     if spline isa BSpline
         iszero_bspline(spline, leftknot) && return zero(T)
     end
     N ≥ order(spline) && return zero(T)
-    @inbounds _splinevalue(T, basis(spline), coeffs(spline), x, leftknot, drv)
+    if workspace === nothing
+        workspace = Vector{T}(undef, order(spline))
+    else
+        exp = (Base.OneTo(order(spline)),)
+        got = axes(workspace)
+        if exp != got
+            throw(DimensionMismatch("workspace has wrong axes: expected $exp, got $got"))
+        end
+    end
+    @inbounds _splinevalue(workspace, basis(spline), coeffs(spline), x, leftknot, drv)
 end
 
 # Return true iff `spline` is zero on the interval given by `leftknot`
@@ -245,11 +232,10 @@ end
 #
 # [^deBoor1978]:
 #     Carl de Boor, *A Practical Guide to Splines*, New York, N.Y.: Springer-Verlag, 1978.
-@propagate_inbounds function _splinevalue(T::Type, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
+@propagate_inbounds function _splinevalue(A, basis::BSplineBasis, coeffs, x, leftknot::Integer, ::Derivative{N}) where N
     t = knots(basis)
     k = order(basis)
-    xtyped = convert(T, x)
-    A = Vector{T}(undef, k)
+    xtyped = convert(eltype(A), x)
     A .= @view coeffs[leftknot-k+1:leftknot]
     # Difference the coefficients (stored in A) N times
     for j = 1:N
