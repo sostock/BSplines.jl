@@ -2,6 +2,8 @@
 
 ## master
 
+* ![Maintenance](https://img.shields.io/badge/-maintenance-grey) Fix tests on Julia ≥ 1.6. ([#18](https://github.com/sostock/BSplines.jl/pull/18))
+
 ## v0.3.0
 
 * ![BREAKING](https://img.shields.io/badge/-BREAKING-red) `bsplines!(dest, args...)` now returns an `OffsetArray` that wraps `dest`, making its output equal to that of `bsplines(args...)`. ([#8](https://github.com/sostock/BSplines.jl/pull/8))
