@@ -1,7 +1,7 @@
 name = "BSplines"
 uuid = "488c2830-172b-11e9-1591-253b8a7df96d"
 authors = ["Sebastian Stock"]
-version = "0.3.0"
+version = "0.3.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
