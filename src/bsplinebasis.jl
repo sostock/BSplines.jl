@@ -610,10 +610,10 @@ function bsplines(basis::BSplineBasis, x, drv=NoDerivative();
                   leftknot=intervalindex(basis, x), derivspace=nothing)
     check_intervalindex(basis, x, leftknot)
     check_derivspace(basis, drv, derivspace)
-    leftknot === nothing && return nothing
     dest = bsplines_destarray(basis, x, drv, derivspace)
+    leftknot === nothing && return bsplines_offsetview_empty(dest)
     offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
-    bsplines_offsetarray(dest, offset, drv)
+    bsplines_offsetview(dest, offset)
 end
 
 """
@@ -681,9 +681,9 @@ function bsplines!(dest, basis::BSplineBasis, x, drv=NoDerivative();
     check_intervalindex(basis, x, leftknot)
     check_destarray_axes(dest, basis, drv)
     check_derivspace(basis, drv, derivspace)
-    leftknot === nothing && return nothing
+    leftknot === nothing && return bsplines_offsetview_empty(dest)
     offset = @inbounds _bsplines!(dest, derivspace, basis, x, leftknot, drv)
-    bsplines_offsetarray(dest, offset, drv)
+    bsplines_offsetview(dest, offset)
 end
 
 check_derivspace(basis, drv::NoDerivUnion, ::Nothing) = nothing
@@ -706,8 +706,11 @@ bsplines_destarray(basis, x, drv, ::Nothing)  = bsplines_destarray(bspline_retur
 bsplines_destarray(T, basis, ::Derivative)                = Vector{T}(undef, order(basis))
 bsplines_destarray(T, basis, ::AllDerivatives{N}) where N = Matrix{T}(undef, order(basis), N)
 
-bsplines_offsetarray(arr, offset, ::Derivative)     = OffsetArray(arr, offset)
-bsplines_offsetarray(arr, offset, ::AllDerivatives) = OffsetArray(arr, offset, -1)
+bsplines_offsetview(arr::AbstractVector, offset) = OffsetArray(view(arr, 1:size(arr,1)), offset)
+bsplines_offsetview(arr::AbstractMatrix, offset) = OffsetArray(view(arr, 1:size(arr,1), :), offset, -1)
+
+bsplines_offsetview_empty(arr::AbstractVector) = OffsetArray(view(arr, 1:0), 0)
+bsplines_offsetview_empty(arr::AbstractMatrix) = OffsetArray(view(arr, 1:0, :), 0, -1)
 
 function check_destarray_axes(dest, basis, drv)
     got = axes(dest)
