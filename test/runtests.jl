@@ -600,7 +600,7 @@ end
              coeffs: [0.0, 1.0, 1.41421, 1.73205, 2.0]"""
         @test repr(MIME"text/plain"(), BSpline(BSplineBasis(5, breakpoints=[1,π]), 2)) ==
             """
-            $(BSpline{BSplineBasis{KnotVector{Float64,Vector{Float64}}}}):
+            BSpline{$(BSplineBasis{KnotVector{Float64,Vector{Float64}}})}:
              basis: 5-element $(BSplineBasis{KnotVector{Float64,Vector{Float64}}}):
               order: 5
               knots: [1.0, 1.0, 1.0, 1.0, 1.0, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159]
