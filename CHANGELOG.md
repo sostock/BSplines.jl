@@ -8,6 +8,10 @@
 * ![Feature](https://img.shields.io/badge/-feature-green) ![Deprecation](https://img.shields.io/badge/-deprecation-orange) A new `BSplineBasis` constructor enables specifying either a knot vector or a breakpoint vector as keyword argument, i.e., `BSplineBasis(k, knots=vec)` specifies `vec` as the knot vector and `BSplineBasis(k, breakpoints=vec)` specifies `vec` as the breakpoint vector whose first and last elements are repeated to create the knot vector. When using the `breakpoints` keyword, `vec` can still contain repeated interior points which appear with the same multiplicity in the knot sequence. The old `BSplineBasis(k, vec)` constructor has been deprecated in favor of `BSplineBasis(k, breakpoints=vec)`.
 * ![Feature](https://img.shields.io/badge/-feature-green) A `BSplineBasis` can now be sliced with an `AbstractUnitRange` to create a new basis, i.e., `basis[indices]` will create a `BSplineBasis` that contains the B-splines from `basis` with the specified indices. `view(basis, indices)` can be used as well, in which case the knot vector of the returned basis is a `view` of the original knot vector.
 
+## v0.3.1
+
+* ![Maintenance](https://img.shields.io/badge/-maintenance-grey) Fix tests on Julia ≥ 1.6. ([#18](https://github.com/sostock/BSplines.jl/pull/18))
+
 ## v0.3.0
 
 * ![BREAKING](https://img.shields.io/badge/-BREAKING-red) `bsplines!(dest, args...)` now returns an `OffsetArray` that wraps `dest`, making its output equal to that of `bsplines(args...)`. ([#8](https://github.com/sostock/BSplines.jl/pull/8))
