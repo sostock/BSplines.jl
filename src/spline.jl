@@ -126,7 +126,9 @@ BSpline{BSplineBasis{UnitRange{Int64}}}:
 Base.show(io::IO, x::BSpline) =
     (summary(io, x); print(io, '(', basis(x), ", ", coeffs(x).index, ')'))
 
-Base.summary(io::IO, x::BSpline{B}) where B = print(io, "BSpline{", B, '}')
+@static if VERSION < v"1.6.0-DEV.347"
+    Base.summary(io::IO, x::BSpline{B}) where B = print(io, "BSpline{", B, '}')
+end
 
 bsplineknots(x::BSpline) = bsplineknots(basis(x), coeffs(x).index)
 bsplineknots(basis, index) = knots(basis)[index:index+order(basis)]
