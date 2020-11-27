@@ -78,7 +78,7 @@ Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
  coeffs: [0.0, 0.249631, 0.75251, 1.22974, 0.738521, -0.432817, -1.01254, -1.02969, -0.958924]
 
 julia> spl(π/4)
-0.7071028397621081
+0.7071028397621082
 ```
 """
 function approximate(f, basis::BSplineBasis; indices::Union{AbstractUnitRange,Colon}=Colon())
