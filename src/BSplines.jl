@@ -68,17 +68,17 @@ See also: [`interpolate`](@ref)
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 0:5);
+julia> basis = BSplineBasis(6, 0:0.25:1);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
-Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
- basis: 9-element BSplineBasis{UnitRange{Int64}}:
-  order: 5
-  breakpoints: 0:5
- coeffs: [0.0, 0.249631, 0.75251, 1.22974, 0.738521, -0.432817, -1.01254, -1.02969, -0.958924]
+Spline{BSplineBasis{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}},Array{Float64,1}}:
+ basis: 9-element BSplineBasis{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}}:
+  order: 6
+  breakpoints: 0.0:0.25:1.0
+ coeffs: [0.0, 0.05, 0.15, 0.298438, 0.486979, 0.651299, 0.755166, 0.814456, 0.841471]
 
-julia> spl(π/4)
-0.7071028397621082
+julia> spl(π/4) ≈ sqrt(1/2)
+true
 ```
 """
 function approximate(f, basis::BSplineBasis; indices::Union{AbstractUnitRange,Colon}=Colon())
