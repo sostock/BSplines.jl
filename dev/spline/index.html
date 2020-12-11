@@ -8,7 +8,7 @@ Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
  basis: 8-element BSplineBasis{UnitRange{Int64}}:
   order: 4
   breakpoints: 0:5
- coeffs: [0.851496, 0.607925, 0.447245, 0.839312, 0.301127, 0.971041, 0.694591, 0.0670928]
+ coeffs: [0.142859, 0.70553, 0.151171, 0.318295, 0.0515691, 0.650685, 0.85359, 0.819552]
 
 julia&gt; basis(spl) === b
 true
@@ -17,14 +17,14 @@ julia&gt; coeffs(spl) === c
 true</code></pre><h2 id="Evaluating-Splines-and-their-derivatives"><a class="docs-heading-anchor" href="#Evaluating-Splines-and-their-derivatives">Evaluating <code>Spline</code>s and their derivatives</a><a id="Evaluating-Splines-and-their-derivatives-1"></a><a class="docs-heading-anchor-permalink" href="#Evaluating-Splines-and-their-derivatives" title="Permalink"></a></h2><p>To evaluate a <code>Spline</code>, it can be called as a function. Alternatively, the <a href="../api/#BSplines.splinevalue"><code>splinevalue</code></a> function can be used:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(4, 0:5), rand(8));
 
 julia&gt; spl(2.5)
-0.7784450491355741
+0.5123492864819505
 
 julia&gt; splinevalue(spl, 2.5)
-0.7784450491355741</code></pre><p>To evaluate derivatives of a spline, the optional <a href="../api/#BSplines.Derivative"><code>Derivative(N)</code></a> argument is used:</p><pre><code class="language-julia-repl">julia&gt; spl(2.5, Derivative(1))
-0.13736148918130076
+0.5123492864819505</code></pre><p>To evaluate derivatives of a spline, the optional <a href="../api/#BSplines.Derivative"><code>Derivative(N)</code></a> argument is used:</p><pre><code class="language-julia-repl">julia&gt; spl(2.5, Derivative(1))
+-0.030229039336919422
 
 julia&gt; splinevalue(spl, 2.5, Derivative(2))
--0.23024950449581638</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>The <a href="../api/#BSplines.AllDerivatives"><code>AllDerivatives{N}</code></a> type is not supported as an argument.</p></div></div><h3 id="Improving-performance"><a class="docs-heading-anchor" href="#Improving-performance">Improving performance</a><a id="Improving-performance-1"></a><a class="docs-heading-anchor-permalink" href="#Improving-performance" title="Permalink"></a></h3><p>Two optional keyword arguments can be used to speed up the evaluation of splines:</p><ul><li><code>workspace</code>: To evaluate a spline, a vector of length <code>order(spline)</code> is used to store intermediate values. By default, a new vector is allocated for each evaluation. To avoid this, a pre-allocated vector can be specified with the <code>workspace</code> keyword argument. Note that in this case, the calculations are performed with numbers of type <code>eltype(workspace)</code>.</li><li><code>leftknot</code>: Evaluating a spline at a point <code>x</code> requires finding the largest index <code>i</code> such that <code>t[i] ≤ x</code> and <code>t[i] &lt; t[end]</code> where <code>t</code> is the knot vector of the basis. By default, the <a href="../api/#BSplines.intervalindex"><code>intervalindex</code></a> function is used to find this index. If the index is already known, it can be specified with the <code>leftknot</code> keyword argument.</li></ul><pre><code class="language-julia-repl">julia&gt; using BenchmarkTools
+-0.11761629966121967</code></pre><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>The <a href="../api/#BSplines.AllDerivatives"><code>AllDerivatives{N}</code></a> type is not supported as an argument.</p></div></div><h3 id="Improving-performance"><a class="docs-heading-anchor" href="#Improving-performance">Improving performance</a><a id="Improving-performance-1"></a><a class="docs-heading-anchor-permalink" href="#Improving-performance" title="Permalink"></a></h3><p>Two optional keyword arguments can be used to speed up the evaluation of splines:</p><ul><li><code>workspace</code>: To evaluate a spline, a vector of length <code>order(spline)</code> is used to store intermediate values. By default, a new vector is allocated for each evaluation. To avoid this, a pre-allocated vector can be specified with the <code>workspace</code> keyword argument. Note that in this case, the calculations are performed with numbers of type <code>eltype(workspace)</code>.</li><li><code>leftknot</code>: Evaluating a spline at a point <code>x</code> requires finding the largest index <code>i</code> such that <code>t[i] ≤ x</code> and <code>t[i] &lt; t[end]</code> where <code>t</code> is the knot vector of the basis. By default, the <a href="../api/#BSplines.intervalindex"><code>intervalindex</code></a> function is used to find this index. If the index is already known, it can be specified with the <code>leftknot</code> keyword argument.</li></ul><pre><code class="language-julia-repl">julia&gt; using BenchmarkTools
 
 julia&gt; spl = Spline(BSplineBasis(4, 0:5), rand(8));
 
@@ -33,13 +33,13 @@ julia&gt; work = zeros(order(spl));
 julia&gt; left = intervalindex(basis(spl), 2.5);
 
 julia&gt; @btime $spl(2.5);
-  122.442 ns (1 allocation: 112 bytes)
+  105.123 ns (1 allocation: 112 bytes)
 
 julia&gt; @btime $spl(2.5, workspace=$work);
-  88.150 ns (0 allocations: 0 bytes)
+  81.677 ns (0 allocations: 0 bytes)
 
 julia&gt; @btime $spl(2.5, workspace=$work, leftknot=$left);
-  71.779 ns (0 allocations: 0 bytes)</code></pre><h2 id="Arithmetic-with-Splines"><a class="docs-heading-anchor" href="#Arithmetic-with-Splines">Arithmetic with <code>Spline</code>s</a><a id="Arithmetic-with-Splines-1"></a><a class="docs-heading-anchor-permalink" href="#Arithmetic-with-Splines" title="Permalink"></a></h2><p>A <code>Spline</code> can be multiplied or divided by a real number using <code>*</code>, <code>/</code>, or <code>\</code>. These operations return a new spline:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(3, 0:5), [1:7;])
+  66.088 ns (0 allocations: 0 bytes)</code></pre><h2 id="Arithmetic-with-Splines"><a class="docs-heading-anchor" href="#Arithmetic-with-Splines">Arithmetic with <code>Spline</code>s</a><a id="Arithmetic-with-Splines-1"></a><a class="docs-heading-anchor-permalink" href="#Arithmetic-with-Splines" title="Permalink"></a></h2><p>A <code>Spline</code> can be multiplied or divided by a real number using <code>*</code>, <code>/</code>, or <code>\</code>. These operations return a new spline:</p><pre><code class="language-julia-repl">julia&gt; spl = Spline(BSplineBasis(3, 0:5), [1:7;])
 Spline{BSplineBasis{UnitRange{Int64}},Array{Int64,1}}:
  basis: 7-element BSplineBasis{UnitRange{Int64}}:
   order: 3
@@ -121,4 +121,4 @@ julia&gt; support(spl) # support of the basis
 (0, 5)
 
 julia&gt; support(bspl) # actual support of the B-spline
-(0, 3)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basis/">« The <code>BSplineBasis</code> type</a><a class="docs-footer-nextpage" href="../functions/">Higher-level functions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 10 December 2020 07:20">Thursday 10 December 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+(0, 3)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basis/">« The <code>BSplineBasis</code> type</a><a class="docs-footer-nextpage" href="../functions/">Higher-level functions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 11 December 2020 13:12">Friday 11 December 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
