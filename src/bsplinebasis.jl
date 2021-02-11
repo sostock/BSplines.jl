@@ -576,30 +576,31 @@ Two optional keyword arguments can be used to increase performance:
 julia> basis = BSplineBasis(4, breakpoints=0:5);
 
 julia> bsplines(basis, 2.4)
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(view(::Array{Float64,1}, 1:4), 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667 
  0.41466666666666663
  0.01066666666666666
 
 julia> bsplines(basis, 2.4, Derivative(1), derivspace=zeros(4,4))
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(view(::Array{Float64,1}, 1:4), 3:6) with eltype Float64 with indices 3:6:
  -0.18000000000000005
  -0.5599999999999999
   0.66
   0.07999999999999996
 
-julia> bsplines(basis, 6) # returns nothing
+julia> bsplines(basis, 6)
+0-element OffsetArray(view(::Array{Float64,1}, 1:0), 1:0) with eltype Float64 with indices 1:0
 
 julia> bsplines(basis, 17//5, leftknot=7)
-4-element OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
+4-element OffsetArray(view(::Array{Rational{Int64},1}, 1:4), 4:7) with eltype Rational{Int64} with indices 4:7:
    9//250
  202//375
  307//750
    2//125
 
 julia> bsplines(basis, 2.4, AllDerivatives(3))
-4×3 OffsetArray(::Array{Float64,2}, 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
+4×3 OffsetArray(view(::Array{Float64,2}, 1:4, :), 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
  0.036      -0.18   0.6
  0.538667   -0.56  -0.8
  0.414667    0.66  -0.2
@@ -652,27 +653,28 @@ julia> basis = BSplineBasis(4, breakpoints=0:5);
 julia> dest = zeros(4);
 
 julia> bsplines!(dest, basis, 2.4)
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(view(::Array{Float64,1}, 1:4), 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667
  0.41466666666666663
  0.01066666666666666
 
-julia> parent(ans) === dest
+julia> parent(parent(ans)) === dest
 true
 
-julia> bsplines!(dest, basis, -1.0) # returns nothing
+julia> bsplines!(dest, basis, -1.0)
+0-element OffsetArray(view(::Array{Float64,1}, 1:0), 1:0) with eltype Float64 with indices 1:0
 
 julia> dest = zeros(4, 3);
 
 julia> bsplines!(dest, basis, 3.75, AllDerivatives(3))
-4×3 OffsetArray(::Array{Float64,2}, 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
+4×3 OffsetArray(view(::Array{Float64,2}, 1:4, :), 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
  0.00260417  -0.03125    0.25
  0.315104    -0.65625    0.25
  0.576823     0.265625  -1.625
  0.105469     0.421875   1.125
 
-julia> parent(ans) === dest
+julia> parent(parent(ans)) === dest
 true
 ```
 """

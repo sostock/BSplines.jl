@@ -10,6 +10,13 @@ A B-spline basis is completely characterized by its order ``k`` and knot vector 
 In the case of the `BSplineBasis` type, **the knot vector of a basis is generated from its breakpoint vector by repeating the first and last breakpoints so that they appear ``k`` times.**
 
 !!! note
+    In this package, ``k`` always refers to the *order* of a B-spline. Some B-spline libraries, including DIERCKX and scipy.interpolate, use the symbol ``k`` to refer to the *degree* of a B-spline. The relationship between the two is
+    ```math
+    \mathrm{order} = \mathrm{degree} + 1.
+    ```
+    For example, using ``k=4`` in this package is equivalent to ``k=3`` (cubic splines) in scipy.interpolate.
+
+!!! note
     Knot sequences where the first and last knot do not appear ``k`` times are not supported by the `BSplineBasis` type.
     The reason for this is that it simplifies the evaluation of B-splines, since it means that exactly ``k`` B-splines are non-zero on each interval.
     If the first or last knot would appear less than ``k`` times, this would not be the case.
