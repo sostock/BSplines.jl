@@ -1041,7 +1041,3 @@ end
         dest ≈ [-5.0, -4.625, -3.925, -2.425, -0.675, 1.1, 2.55, 3.2]
     end
 end
-
-@testset "Deprecated" begin
-    @test (@test_deprecated BSplineBasis(3, 0:5)) === BSplineBasis(3, breakpoints=0:5)
-end
