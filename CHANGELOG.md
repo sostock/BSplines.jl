@@ -2,6 +2,8 @@
 
 ## master
 
+* ![Maintenance](https://img.shields.io/badge/-maintenance-grey) Fix doctests on Julia ≥ 1.6. ([#23](https://github.com/sostock/BSplines.jl/pull/23))
+
 ## v0.3.1
 
 * ![Maintenance](https://img.shields.io/badge/-maintenance-grey) Fix tests on Julia ≥ 1.6. ([#18](https://github.com/sostock/BSplines.jl/pull/18))
