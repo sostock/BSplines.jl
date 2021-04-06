@@ -71,8 +71,8 @@ See also: [`interpolate`](@ref)
 julia> basis = BSplineBasis(6, 0:0.25:1);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
-Spline{BSplineBasis{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}},Array{Float64,1}}:
- basis: 9-element BSplineBasis{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}}:
+$(Spline{BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}, Vector{Float64}}):
+ basis: 9-element $(BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}):
   order: 6
   breakpoints: 0.0:0.25:1.0
  coeffs: [0.0, 0.05, 0.15, 0.298438, 0.486979, 0.651299, 0.755166, 0.814456, 0.841471]
@@ -105,7 +105,7 @@ julia> basis = BSplineBasis(5, 1:10);
 julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
 
 julia> spl = interpolate(basis, xs, ys)
-Spline{BSplineBasis{UnitRange{Int64}},Array{Float64,1}}:
+$(Spline{BSplineBasis{UnitRange{Int64}}, Vector{Float64}}):
  basis: 13-element BSplineBasis{UnitRange{Int64}}:
   order: 5
   breakpoints: 1:10
@@ -152,7 +152,7 @@ See also: [`knotaverages!`](@ref)
 
 ```jldoctest
 julia> knotaverages(BSplineBasis(3, 0:5))
-7-element Array{Float64,1}:
+7-element $(Vector{Float64}):
  0.0
  0.5
  1.5
@@ -162,7 +162,7 @@ julia> knotaverages(BSplineBasis(3, 0:5))
  5.0
 
 julia> knotaverages(BSplineBasis(4, [1, 3//2, 5//2, 4]), indices=2:6)
-5-element Array{Rational{Int64},1}:
+5-element $(Vector{Rational{Int64}}):
  7//6
  5//3
  8//3
@@ -197,7 +197,7 @@ See also: [`knotaverages`](@ref)
 julia> dest = Vector{Float64}(undef, 7);
 
 julia> knotaverages!(dest, BSplineBasis(3, 0:5))
-7-element Array{Float64,1}:
+7-element $(Vector{Float64}):
  0.0
  0.5
  1.5
@@ -209,7 +209,7 @@ julia> knotaverages!(dest, BSplineBasis(3, 0:5))
 julia> dest = Vector{Rational{Int}}(undef, 5);
 
 julia> knotaverages!(dest, BSplineBasis(3, 0:5), indices=2:6)
-5-element Array{Rational{Int64},1}:
+5-element $(Vector{Rational{Int64}}):
  1//2
  3//2
  5//2
@@ -264,7 +264,7 @@ optimum” and are computationally inexpensive.
 
 ```jldoctest
 julia> averagebasis(5, 0:10)
-11-element BSplineBasis{Array{Float64,1}}:
+11-element $(BSplineBasis{Vector{Float64}}):
  order: 5
  breakpoints: [0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0]
 ```
