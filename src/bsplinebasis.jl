@@ -84,7 +84,7 @@ julia> breakpoints(BSplineBasis(3, 0:5))
 0:5
 
 julia> breakpoints(BSplineBasis(4, [1.0, 1.5, 2.5, 4.0]))
-4-element Array{Float64,1}:
+4-element $(Vector{Float64}):
  1.0
  1.5
  2.5
@@ -105,7 +105,7 @@ duplicated so they appear `order(basis)` times.
 
 ```jldoctest
 julia> knots(BSplineBasis(3, 0:5))
-10-element BSplines.KnotVector{Int64,UnitRange{Int64}}:
+10-element $(BSplines.KnotVector{Int64, UnitRange{Int64}}):
  0
  0
  0
@@ -329,10 +329,10 @@ julia> intervalindices(BSplineBasis(3, 0:5), 1:4)
 3:6
 
 julia> intervalindices(BSplineBasis(4, [1,2,3,4,4,4,5,6]))
-BSplines.IntervalIndices{Array{Int64,1}}([1, 2, 3, 4, 4, 4, 5, 6], 1:8, 3)
+$(BSplines.IntervalIndices{Vector{Int64}})([1, 2, 3, 4, 4, 4, 5, 6], 1:8, 3)
 
 julia> collect(ans)
-5-element Array{Int64,1}:
+5-element $(Vector{Int64}):
   4
   5
   6
@@ -384,10 +384,10 @@ julia> intervalindices(BSplineBasis(3, 0:5), 3, 5, 4)
 5:5
 
 julia> intervalindices(BSplineBasis(4, [1,2,3,4,4,4,5,6]), 3, 5)
-BSplines.IntervalIndices{Array{Int64,1}}([1, 2, 3, 4, 4, 4, 5, 6], 2:4, 3)
+$(BSplines.IntervalIndices{Vector{Int64}})([1, 2, 3, 4, 4, 4, 5, 6], 2:4, 3)
 
 julia> collect(ans)
-2-element Array{Int64,1}:
+2-element $(Vector{Int64}):
  5
  6
 ```
@@ -464,14 +464,14 @@ Two optional keyword arguments can be used to increase performance:
 julia> basis = BSplineBasis(4, 0:5);
 
 julia> bsplines(basis, 2.4)
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(::$(Vector{Float64}), 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
- 0.5386666666666667 
+ 0.5386666666666667
  0.41466666666666663
  0.01066666666666666
 
 julia> bsplines(basis, 2.4, Derivative(1), derivspace=zeros(4,4))
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(::$(Vector{Float64}), 3:6) with eltype Float64 with indices 3:6:
  -0.18000000000000005
  -0.5599999999999999
   0.66
@@ -480,14 +480,14 @@ julia> bsplines(basis, 2.4, Derivative(1), derivspace=zeros(4,4))
 julia> bsplines(basis, 6) # returns nothing
 
 julia> bsplines(basis, 17//5, leftknot=7)
-4-element OffsetArray(::Array{Rational{Int64},1}, 4:7) with eltype Rational{Int64} with indices 4:7:
+4-element OffsetArray(::$(Vector{Rational{Int64}}), 4:7) with eltype Rational{Int64} with indices 4:7:
    9//250
  202//375
  307//750
    2//125
 
 julia> bsplines(basis, 2.4, AllDerivatives(3))
-4×3 OffsetArray(::Array{Float64,2}, 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
+4×3 OffsetArray(::$(Matrix{Float64}), 3:6, 0:2) with eltype Float64 with indices 3:6×0:2:
  0.036      -0.18   0.6
  0.538667   -0.56  -0.8
  0.414667    0.66  -0.2
@@ -540,7 +540,7 @@ julia> basis = BSplineBasis(4, 0:5);
 julia> dest = zeros(4);
 
 julia> bsplines!(dest, basis, 2.4)
-4-element OffsetArray(::Array{Float64,1}, 3:6) with eltype Float64 with indices 3:6:
+4-element OffsetArray(::$(Vector{Float64}), 3:6) with eltype Float64 with indices 3:6:
  0.03600000000000002
  0.5386666666666667
  0.41466666666666663
@@ -554,7 +554,7 @@ julia> bsplines!(dest, basis, -1.0) # returns nothing
 julia> dest = zeros(4, 3);
 
 julia> bsplines!(dest, basis, 3.75, AllDerivatives(3))
-4×3 OffsetArray(::Array{Float64,2}, 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
+4×3 OffsetArray(::$(Matrix{Float64}), 4:7, 0:2) with eltype Float64 with indices 4:7×0:2:
  0.00260417  -0.03125    0.25
  0.315104    -0.65625    0.25
  0.576823     0.265625  -1.625
@@ -753,7 +753,7 @@ julia> basis = BSplineBasis(3, 0:5);
 julia> x = [0.3, 1.5, 3.2, 4.5];
 
 julia> basismatrix(basis, x)
-4×7 Array{Float64,2}:
+4×7 $(Matrix{Float64}):
  0.49  0.465  0.045  0.0    0.0    0.0    0.0
  0.0   0.125  0.75   0.125  0.0    0.0    0.0
  0.0   0.0    0.0    0.32   0.66   0.02   0.0
@@ -784,7 +784,7 @@ julia> x = [0.3, 1.5, 3.2, 4.5];
 julia> dest = Array{Float64}(undef, length(x), length(basis));
 
 julia> basismatrix!(dest, basis, x)
-4×7 Array{Float64,2}:
+4×7 $(Matrix{Float64}):
  0.49  0.465  0.045  0.0    0.0    0.0    0.0
  0.0   0.125  0.75   0.125  0.0    0.0    0.0
  0.0   0.0    0.0    0.32   0.66   0.02   0.0
