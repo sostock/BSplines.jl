@@ -27,12 +27,12 @@ by duplicating the first and last elements so that they appear `order` times.
 
 ```jldoctest
 julia> BSplineBasis(3, breakpoints=0:5)
-7-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+7-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
  order: 3
  knots: [0, 0, 0, 1, 2, 3, 4, 5, 5, 5]
 
 julia> BSplineBasis(3, knots=0:5)
-3-element BSplineBasis{UnitRange{Int64}}:
+3-element $(BSplineBasis{UnitRange{Int64}}):
  order: 3
  knots: 0:5
 ```
@@ -94,12 +94,12 @@ vector of `basis`.
 
 ```jldoctest
 julia> basis = BSplineBasis(4, breakpoints=0:5)
-8-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+8-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
  order: 4
  knots: [0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 5, 5]
 
 julia> view(basis, 3:7)
-5-element BSplineBasis{SubArray{Int64,1,BSplines.KnotVector{Int64,UnitRange{Int64}},Tuple{UnitRange{Int64}},true}}:
+5-element $(BSplineBasis{SubArray{Int64, 1, BSplines.KnotVector{Int64, UnitRange{Int64}}, Tuple{UnitRange{Int64}}, true}}):
  order: 4
  knots: [0, 0, 1, 2, 3, 4, 5, 5, 5]
 
@@ -590,7 +590,7 @@ julia> bsplines(basis, 2.4, Derivative(1), derivspace=zeros(4,4))
   0.07999999999999996
 
 julia> bsplines(basis, 6)
-0-element OffsetArray(view(::Array{Float64,1}, 1:0), 1:0) with eltype Float64 with indices 1:0
+0-element OffsetArray(view(::$(Vector{Float64}), 1:0), 1:0) with eltype Float64 with indices 1:0
 
 julia> bsplines(basis, 17//5, leftknot=7)
 4-element OffsetArray(view(::$(Vector{Rational{Int64}}), 1:4), 4:7) with eltype Rational{Int64} with indices 4:7:
@@ -663,7 +663,7 @@ julia> parent(parent(ans)) === dest
 true
 
 julia> bsplines!(dest, basis, -1.0)
-0-element OffsetArray(view(::Array{Float64,1}, 1:0), 1:0) with eltype Float64 with indices 1:0
+0-element OffsetArray(view(::$(Vector{Float64}), 1:0), 1:0) with eltype Float64 with indices 1:0
 
 julia> dest = zeros(4, 3);
 

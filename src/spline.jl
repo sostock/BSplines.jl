@@ -113,8 +113,8 @@ Return the `index`-th B-spline of `basis`. Instead of `BSpline(basis, index)`, t
 julia> basis = BSplineBasis(5, breakpoints=1:10);
 
 julia> BSpline(basis, 3) # or: basis[3]
-BSpline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}}:
- basis: 13-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+$(BSpline{BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}}):
+ basis: 13-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
   order: 5
   knots: [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10]
  index: 3 (knots: [1, 1, 1, 2, 3, 4])
