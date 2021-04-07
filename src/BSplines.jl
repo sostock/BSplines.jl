@@ -71,8 +71,8 @@ See also: [`interpolate`](@ref)
 julia> basis = BSplineBasis(6, breakpoints=0:0.25:1);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
-Spline{BSplineBasis{BSplines.KnotVector{Float64,StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}}},Array{Float64,1}}:
- basis: 9-element BSplineBasis{BSplines.KnotVector{Float64,StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}}}:
+$(Spline{BSplineBasis{BSplines.KnotVector{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}}, Vector{Float64}}):
+ basis: 9-element $(BSplineBasis{BSplines.KnotVector{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}}):
   order: 6
   knots: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
  coeffs: [0.0, 0.05, 0.15, 0.298438, 0.486979, 0.651299, 0.755166, 0.814456, 0.841471]
@@ -105,8 +105,8 @@ julia> basis = BSplineBasis(5, breakpoints=1:10);
 julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
 
 julia> spl = interpolate(basis, xs, ys)
-Spline{BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}},Array{Float64,1}}:
- basis: 13-element BSplineBasis{BSplines.KnotVector{Int64,UnitRange{Int64}}}:
+$(Spline{BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}, Vector{Float64}}):
+ basis: 13-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
   order: 5
   knots: [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10]
  coeffs: [0.0, 0.248019, 0.596872, 0.946671, 1.26894, 1.51405, 1.71149, 1.87666, 2.01856, 2.14292, 2.22592, 2.27758, 2.30259]
@@ -154,7 +154,7 @@ See also: [`knotaverages!`](@ref)
 julia> basis = BSplineBasis(3, breakpoints=0:5);
 
 julia> knotaverages(basis)
-7-element Array{Float64,1}:
+7-element $(Vector{Float64}):
  0.0
  0.5
  1.5
@@ -166,7 +166,7 @@ julia> knotaverages(basis)
 julia> basis = BSplineBasis(4, breakpoints=[1, 3//2, 5//2, 4]);
 
 julia> knotaverages(basis, indices=2:6)
-5-element Array{Rational{Int64},1}:
+5-element $(Vector{Rational{Int64}}):
  7//6
  5//3
  8//3
@@ -203,7 +203,7 @@ julia> basis = BSplineBasis(3, breakpoints=0:5);
 julia> dest = Vector{Float64}(undef, 7);
 
 julia> knotaverages!(dest, basis)
-7-element Array{Float64,1}:
+7-element $(Vector{Float64}):
  0.0
  0.5
  1.5
@@ -215,7 +215,7 @@ julia> knotaverages!(dest, basis)
 julia> dest = Vector{Rational{Int}}(undef, 5);
 
 julia> knotaverages!(dest, basis, indices=2:6)
-5-element Array{Rational{Int64},1}:
+5-element $(Vector{Rational{Int64}}):
  1//2
  3//2
  5//2
@@ -270,7 +270,7 @@ optimum” and are computationally inexpensive.
 
 ```jldoctest
 julia> averagebasis(5, 0:10)
-11-element BSplineBasis{BSplines.KnotVector{Float64,Array{Float64,1}}}:
+11-element $(BSplineBasis{BSplines.KnotVector{Float64, Vector{Float64}}}):
  order: 5
  knots: [0.0, 0.0, 0.0, 0.0, 0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0, 10.0, 10.0, 10.0, 10.0]
 ```

@@ -24,7 +24,7 @@ the front and the last element `back` times at the back. (not exported)
 
 ```jldoctest
 julia> BSplines.KnotVector(0:4, 2)
-9-element BSplines.KnotVector{Int64,UnitRange{Int64}}:
+9-element $(BSplines.KnotVector{Int64, UnitRange{Int64}}):
  0
  0
  0
@@ -36,7 +36,7 @@ julia> BSplines.KnotVector(0:4, 2)
  4
 
 julia> BSplines.KnotVector(["first", "second", "last"], 2, 3)
-8-element BSplines.KnotVector{String,Array{String,1}}:
+8-element $(BSplines.KnotVector{String, Vector{String}}):
  "first"
  "first"
  "first"
