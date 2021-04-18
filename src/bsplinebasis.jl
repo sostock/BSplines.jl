@@ -143,8 +143,8 @@ order(b::BSplineBasis) = b.order
 """
     intervalindex(vec, x[, start])
 
-If `v` is an `AbstractVector`, return the largest index `i` so that `vec[i] ≤ x` and
-`vec[i] < vec[end]`. Return `nothing` if no such index exists. The vector `vec` is
+If `v` is an `AbstractVector`, return the largest index `i` so that `vec[i] ≤ x ≤ vec[end]`
+and `vec[i] < vec[end]`. Return `nothing` if no such index exists. The vector `vec` is
 assumed to be sorted in ascending order.
 
 If `vec` is a [`BSplineBasis`](@ref), return `intervalindex(knots(vec), x[, start])`.
