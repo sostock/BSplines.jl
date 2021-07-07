@@ -1,4 +1,4 @@
-b1 = BSplineBasis(1, 0:5)
+b1 = BSplineBasis(1, breakpoints=0:5)
 
 B₁ = x -> Int(0 ≤ x < 1)
 B₂ = x -> Int(1 ≤ x < 2)
@@ -8,7 +8,7 @@ B₅ = x -> Int(4 ≤ x ≤ 5)
 
 b1_exact = [B₁, B₂, B₃, B₄, B₅]
 
-b2 = BSplineBasis(2, big(0):1:big(5))
+b2 = BSplineBasis(2, breakpoints=big(0):1:big(5))
 
 B₁ = x -> 0 ≤ x < 1 ? -x + 1 : 0*one(x)
 B₂ = x -> 0 ≤ x < 1 ?  x + 0 :
@@ -34,7 +34,7 @@ B₆′ = x -> 4 ≤ x ≤ 5 ?  1*one(x) : 0*one(x)
 
 b2_exact = [B₁ B₁′; B₂ B₂′; B₃ B₃′; B₄ B₄′; B₅ B₅′; B₆ B₆′]
 
-b3 = BSplineBasis(3, 0//1:5//1)
+b3 = BSplineBasis(3, breakpoints=0//1:5//1)
 
 B₁ = x -> 0 ≤ x < 1 ? 1//1*x^2 - 2//1*x + 1//1 : 0//1*one(x)
 B₂ = x -> 0 ≤ x < 1 ? -3//2*x^2 + 2//1*x        :
@@ -86,7 +86,7 @@ B₇′′ = x -> 4 ≤ x ≤ 5 ? 2//1*one(x) : 0//1*one(x)
 
 b3_exact = [B₁ B₁′ B₁′′; B₂ B₂′ B₂′′; B₃ B₃′ B₃′′; B₄ B₄′ B₄′′; B₅ B₅′ B₅′′; B₆ B₆′ B₆′′; B₇ B₇′ B₇′′]
 
-b4 = BSplineBasis(4, Int128[0,1,2,3,4,5])
+b4 = BSplineBasis(4, knots=Int128[0,0,0,0,1,2,3,4,5,5,5,5])
 
 B₁ = x -> 0 ≤ x < 1 ? -1//1*x^3 + 3//1*x^2 - 3//1*x + 1//1 : 0//1*one(x)
 B₂ = x -> 0 ≤ x < 1 ?  7//4*x^3 - 9//2*x^2 + 3//1*x        :
@@ -175,7 +175,7 @@ B₈′′′ = x -> 4 ≤ x ≤ 5 ? 6//1 : 0//1*one(x)
 b4_exact = [B₁ B₁′ B₁′′ B₁′′′; B₂ B₂′ B₂′′ B₂′′′; B₃ B₃′ B₃′′ B₃′′′; B₄ B₄′ B₄′′ B₄′′′;
             B₅ B₅′ B₅′′ B₅′′′; B₆ B₆′ B₆′′ B₆′′′; B₇ B₇′ B₇′′ B₇′′′; B₈ B₈′ B₈′′ B₈′′′]
 
-b5 = BSplineBasis(3, [-5.0, -3.5, -2.2, 1.0, 2.0, 3.6])
+b5 = BSplineBasis(3, knots=[-5.0, -5.0, -5.0, -3.5, -2.2, 1.0, 2.0, 3.6, 3.6, 3.6])
 
 # The exact B-spline functions are for the breakpoint sequence [-5, -7//2, -11//5, 1, 2, 18//5].
 # Note that this is not exactly equal to [-5.0, -3.5, -2.2, 1.0, 2.0, 3.6], because the
@@ -230,7 +230,7 @@ B₇′′ = x ->  2.0 ≤ x ≤ 3.6 ? 25//32*one(x) : 0//1*one(x)
 
 b5_exact = [B₁ B₁′ B₁′′; B₂ B₂′ B₂′′; B₃ B₃′ B₃′′; B₄ B₄′ B₄′′; B₅ B₅′ B₅′′; B₆ B₆′ B₆′′; B₇ B₇′ B₇′′]
 
-b6 = BSplineBasis(4, Rational{Int64}[-5//1, -7//2, -11//5, 1//1, 2//1, 18//5])
+b6 = BSplineBasis(4, breakpoints=Rational{Int64}[-5//1, -7//2, -11//5, 1//1, 2//1, 18//5])
 
 B₁ = x ->  -5//1 ≤ x <  -7//2 ? -8//27*x^3 - 28//9*x^2 - 98//9*x - 343//27 : 0//1*one(x)
 B₂ = x ->  -5//1 ≤ x <  -7//2 ? 1429//2646*x^3 + 5339//882*x^2 + 19429//882*x + 69635//2646 :
@@ -319,7 +319,7 @@ B₈′′′ = x ->   2//1 ≤ x ≤  18//5 ? 375//256*one(x) : 0//1*one(x)
 b6_exact = [B₁ B₁′ B₁′′ B₁′′′; B₂ B₂′ B₂′′ B₂′′′; B₃ B₃′ B₃′′ B₃′′′; B₄ B₄′ B₄′′ B₄′′′;
             B₅ B₅′ B₅′′ B₅′′′; B₆ B₆′ B₆′′ B₆′′′; B₇ B₇′ B₇′′ B₇′′′; B₈ B₈′ B₈′′ B₈′′′]
 
-b7 = BSplineBasis(3, Int8[-6,-4,-2,0,0,1,2])
+b7 = BSplineBasis(3, knots=Int8[-6,-6,-6,-4,-2,0,0,1,2,2,2])
 
 B₁ = x -> -6 ≤ x < -4 ? 1//4*x^2 + 2//1*x + 4//1 : 0//1*one(x)
 B₂ = x -> -6 ≤ x < -4 ? -3//8*x^2 - 7//2*x - 15//2 :

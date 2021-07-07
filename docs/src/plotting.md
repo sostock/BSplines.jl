@@ -4,7 +4,7 @@
 using Plots; gr()
 Plots.reset_defaults()
 using BSplines
-basis = BSplineBasis(4, 0:5)
+basis = BSplineBasis(4, breakpoints=0:5)
 spl = approximate(sin, basis)
 ```
 
@@ -16,7 +16,7 @@ A B-spline basis can be plotted by passing it to the `Plots.plot` function:
 
 ```@example plotting
 using Plots
-basis = BSplineBasis(4, 0:5)
+basis = BSplineBasis(4, breakpoints=0:5)
 plot(basis)
 ```
 

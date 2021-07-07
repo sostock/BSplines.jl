@@ -57,7 +57,7 @@ drawn outside of its support.
 # Examples
 
 ```jldoctest
-julia> spline = approximate(sin, BSplineBasis(5, 0:5)); # create a Spline
+julia> spline = approximate(sin, BSplineBasis(5, breakpoints=0:5)); # create a Spline
 
 julia> f = Function(spline, false); # f is zero outside of the interval [0,5]
 

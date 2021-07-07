@@ -11,7 +11,7 @@ The basis on which the spline is defined can be obtained with the [`basis`](@ref
 The [`coeffs`](@ref) function returns the coefficient vector of a spline.
 
 ```@repl spline
-b = BSplineBasis(4, 0:5);
+b = BSplineBasis(4, breakpoints=0:5);
 c = rand(length(b));
 spl = Spline(b, c)
 basis(spl) === b
@@ -24,7 +24,7 @@ To evaluate a `Spline`, it can be called as a function.
 Alternatively, the [`splinevalue`](@ref) function can be used:
 
 ```@repl spline
-spl = Spline(BSplineBasis(4, 0:5), rand(8));
+spl = Spline(BSplineBasis(4, breakpoints=0:5), rand(8));
 spl(2.5)
 splinevalue(spl, 2.5)
 ```
@@ -55,7 +55,7 @@ Two optional keyword arguments can be used to speed up the evaluation of splines
 
 ```@repl spline
 using BenchmarkTools
-spl = Spline(BSplineBasis(4, 0:5), rand(8));
+spl = Spline(BSplineBasis(4, breakpoints=0:5), rand(8));
 work = zeros(order(spl));
 left = intervalindex(basis(spl), 2.5);
 @btime $spl(2.5);
@@ -69,7 +69,7 @@ A `Spline` can be multiplied or divided by a real number using `*`, `/`, or `\`.
 These operations return a new spline:
 
 ```@repl spline
-spl = Spline(BSplineBasis(3, 0:5), [1:7;])
+spl = Spline(BSplineBasis(3, breakpoints=0:5), [1:7;])
 3.0 * spl
 spl / 4
 4 \ spl == ans
@@ -79,7 +79,7 @@ Using the `lmul!`/`rmul!` and `ldiv!`/`rdiv!` functions from the `LinearAlgebra`
 
 ```@repl spline
 using LinearAlgebra: rmul!
-spl = Spline(BSplineBasis(3, 0:5), [1:7;])
+spl = Spline(BSplineBasis(3, breakpoints=0:5), [1:7;])
 rmul!(spl, 3);
 spl
 ```
@@ -87,8 +87,8 @@ spl
 If two splines are defined on the same basis, they can be added and subtracted from each other using `+` and `-`:
 
 ```@repl spline
-spl1 = Spline(BSplineBasis(3, 0:5), [1:7;]);
-spl2 = Spline(BSplineBasis(3, 0:5), [2:8;]);
+spl1 = Spline(BSplineBasis(3, breakpoints=0:5), [1:7;]);
+spl2 = Spline(BSplineBasis(3, breakpoints=0:5), [2:8;]);
 spl1 + spl2
 spl1 - spl2
 ```
@@ -98,7 +98,7 @@ spl1 - spl2
 Indexing into or iterating over a B-spline basis yields `BSpline`s.
 The parametric type [`BSpline{T}`](@ref) represents a single B-spline from a B-spline basis of type `T`:
 ```@repl spline
-b = BSplineBasis(4, 0:5);
+b = BSplineBasis(4, breakpoints=0:5);
 b[3]
 ```
 
