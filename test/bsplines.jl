@@ -22,6 +22,14 @@ maybebig(x::Integer) = Int64(x)
 maybebig(x::Rational) = Rational{Int64}(x)
 maybebig(x::AbstractFloat) = big(x)
 
+bsplines!_offsetviewtype(parent, ::Derivative=Derivative(0)) = typeof(OffsetArray(view(parent, 1:0), 1))
+bsplines!_offsetviewtype(parent, ::AllDerivatives) = typeof(OffsetArray(view(parent, 1:0, :), 1, -1))
+
+bsplines_offsetviewtype(T, d::Derivative=Derivative(0)) = bsplines!_offsetviewtype(zeros(T,0), d)
+bsplines_offsetviewtype(T, d::AllDerivatives) = bsplines!_offsetviewtype(zeros(T,0,0), d)
+
+pparent(x) = parent(parent(x))
+
 @time @testset "bsplines" begin
     @testset "Return types" begin
         # b1 = BSplineBasis(1, 0:5)
@@ -47,37 +55,37 @@ maybebig(x::AbstractFloat) = big(x)
                               (b7, b7_types)]
             leftknot = intervalindex(basis, 1)
             for (xtype, bspline_type) in types
-                @test eltype(bsplines(basis, one(xtype), leftknot=leftknot)) == bspline_type
-                @test eltype(bsplines(basis, one(xtype), AllDerivatives(2), leftknot=leftknot)) == bspline_type
-                @test eltype(bsplines(basis, one(xtype), Derivative(0), leftknot=leftknot)) == bspline_type
+                @test typeof(@inferred(bsplines(basis, one(xtype), leftknot=leftknot))) === bsplines_offsetviewtype(bspline_type)
+                @test typeof(@inferred(bsplines(basis, one(xtype), AllDerivatives(2), leftknot=leftknot))) === bsplines_offsetviewtype(bspline_type, AllDerivatives(2))
+                @test typeof(@inferred(bsplines(basis, one(xtype), Derivative(1), leftknot=leftknot))) === bsplines_offsetviewtype(bspline_type, Derivative(1))
             end
             for T = [Float32, Float64, BigFloat, Rational{Int128}]
                 derivspace = Matrix{T}(undef, order(basis), order(basis))
-                @test eltype(bsplines(basis, 1, AllDerivatives(2), leftknot=leftknot, derivspace=derivspace)) == T
-                @test eltype(bsplines(basis, 1, Derivative(2), leftknot=leftknot, derivspace=derivspace)) == T
+                @test typeof(@inferred(bsplines(basis, 1, AllDerivatives(2), leftknot=leftknot, derivspace=derivspace))) === bsplines_offsetviewtype(T, AllDerivatives(2))
+                @test typeof(@inferred(bsplines(basis, 1, Derivative(2), leftknot=leftknot, derivspace=derivspace))) === bsplines_offsetviewtype(T, Derivative(2))
             end
         end
 
-        function test_bsplines_nothing(basis, x)
+        function test_bsplines_empty(basis, x)
             derivspace = Matrix{typeof(x)}(undef, order(basis), order(basis))
-            @test bsplines(basis, x)                                                             === nothing
-            @test bsplines(basis, x, leftknot=nothing)                                           === nothing
-            @test bsplines(basis, x, AllDerivatives(2))                                          === nothing
-            @test bsplines(basis, x, AllDerivatives(2), leftknot=nothing)                        === nothing
-            @test bsplines(basis, x, AllDerivatives(2), derivspace=derivspace)                   === nothing
-            @test bsplines(basis, x, AllDerivatives(2), leftknot=nothing, derivspace=derivspace) === nothing
-            @test bsplines(basis, x, Derivative(2))                                              === nothing
-            @test bsplines(basis, x, Derivative(2), leftknot=nothing)                            === nothing
-            @test bsplines(basis, x, Derivative(2), derivspace=derivspace)                       === nothing
-            @test bsplines(basis, x, Derivative(2), leftknot=nothing, derivspace=derivspace)     === nothing
+            @test size(bsplines(basis, x))                                                             == (0,)
+            @test size(bsplines(basis, x, leftknot=nothing))                                           == (0,)
+            @test size(bsplines(basis, x, AllDerivatives(2)))                                          == (0, 2)
+            @test size(bsplines(basis, x, AllDerivatives(2), leftknot=nothing))                        == (0, 2)
+            @test size(bsplines(basis, x, AllDerivatives(2), derivspace=derivspace))                   == (0, 2)
+            @test size(bsplines(basis, x, AllDerivatives(2), leftknot=nothing, derivspace=derivspace)) == (0, 2)
+            @test size(bsplines(basis, x, Derivative(2)))                                              == (0,)
+            @test size(bsplines(basis, x, Derivative(2), leftknot=nothing))                            == (0,)
+            @test size(bsplines(basis, x, Derivative(2), derivspace=derivspace))                       == (0,)
+            @test size(bsplines(basis, x, Derivative(2), leftknot=nothing, derivspace=derivspace))     == (0,)
         end
-        test_bsplines_nothing(b1, NaN16)
-        test_bsplines_nothing(b2, -Inf32)
-        test_bsplines_nothing(b3, Inf64)
-        test_bsplines_nothing(b4, 1//0)
-        test_bsplines_nothing(b5, -1//0)
-        test_bsplines_nothing(b6, -100)
-        test_bsplines_nothing(b7, 10.0)
+        test_bsplines_empty(b1, NaN16)
+        test_bsplines_empty(b2, -Inf32)
+        test_bsplines_empty(b3, Inf64)
+        test_bsplines_empty(b4, 1//0)
+        test_bsplines_empty(b5, -1//0)
+        test_bsplines_empty(b6, -100)
+        test_bsplines_empty(b7, 10.0)
     end
 
     function test_bsplines(basis, basis_exact, x, isexact)
@@ -100,9 +108,9 @@ maybebig(x::AbstractFloat) = big(x)
             @test bsplines(basis, x, Derivative(N), leftknot=leftknot, derivspace=derivspace) == view(bspl_nderiv,:,N)
             # AllDerivatives(N)
             if N == 1
-                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(view(parent(bspl_nderiv),:,1:N), range, 0:N-1)
+                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot) == OffsetArray(view(pparent(bspl_nderiv),:,1:N), range, 0:N-1)
             else
-                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot, derivspace=derivspace) == OffsetArray(view(parent(bspl_nderiv),:,1:N), range, 0:N-1)
+                @test bsplines(basis, x, AllDerivatives(N), leftknot=leftknot, derivspace=derivspace) == OffsetArray(view(pparent(bspl_nderiv),:,1:N), range, 0:N-1)
             end
         end
     end
@@ -177,27 +185,32 @@ maybebig(x::AbstractFloat) = big(x)
 end
 
 @time @testset "bsplines!" begin
-    function test_bsplines!_nothing(basis, x)
+    resultsize_empty(deriv) = (0,)
+    resultsize_empty(deriv::AllDerivatives{N}) where N = (0,N)
+    function _test_bsplines!_empty(result, dest, deriv=Derivative(0))
+        @test typeof(result) === bsplines!_offsetviewtype(dest, deriv)
+        @test size(result) === resultsize_empty(deriv)
+        @test pparent(result) === dest
+    end
+    function test_bsplines!_empty(basis, x)
         dest     = Array{Float64}(undef, order(basis))
         dest_all = Array{Float32}(undef, order(basis), 2)
         derivspace     = Array{Float64}(undef, order(basis), order(basis))
         derivspace_all = Array{Float32}(undef, order(basis), order(basis))
-        @test bsplines!(dest, basis, x) === nothing
-        @test bsplines!(dest, basis, x, leftknot=nothing) === nothing
-        @test bsplines!(dest_all, basis, x, AllDerivatives(2)) === nothing
-        @test bsplines!(dest_all, basis, x, AllDerivatives(2), leftknot=nothing) === nothing
-        @test bsplines!(dest_all, basis, x, AllDerivatives(2), derivspace=derivspace_all) === nothing
-        @test bsplines!(dest_all, basis, x, AllDerivatives(2), leftknot=nothing, derivspace=derivspace_all) === nothing
-        @test bsplines!(dest, basis, x, Derivative(2)) === nothing
-        @test bsplines!(dest, basis, x, Derivative(2), leftknot=nothing) === nothing
-        @test bsplines!(dest, basis, x, Derivative(2), derivspace=derivspace) === nothing
-        @test bsplines!(dest, basis, x, Derivative(2), leftknot=nothing, derivspace=derivspace) === nothing
+        _test_bsplines!_empty(@inferred(bsplines!(dest, basis, x)),                   dest)
+        _test_bsplines!_empty(@inferred(bsplines!(dest, basis, x, leftknot=nothing)), dest)
+        for (dst, drv, drvspace) = [(dest, Derivative(2), derivspace), (dest_all, AllDerivatives(2), derivspace_all)]
+            _test_bsplines!_empty(@inferred(bsplines!(dst, basis, x, drv)),                                        dst, drv)
+            _test_bsplines!_empty(@inferred(bsplines!(dst, basis, x, drv, leftknot=nothing)),                      dst, drv)
+            _test_bsplines!_empty(@inferred(bsplines!(dst, basis, x, drv, derivspace=drvspace)),                   dst, drv)
+            _test_bsplines!_empty(@inferred(bsplines!(dst, basis, x, drv, leftknot=nothing, derivspace=drvspace)), dst, drv)
+        end
     end
-    test_bsplines!_nothing(b1, NaN16)
-    test_bsplines!_nothing(b2, -Inf32)
-    test_bsplines!_nothing(b3, Inf64)
-    test_bsplines!_nothing(b4, -100)
-    test_bsplines!_nothing(b5, 10.0)
+    test_bsplines!_empty(b1, NaN16)
+    test_bsplines!_empty(b2, -Inf32)
+    test_bsplines!_empty(b3, Inf64)
+    test_bsplines!_empty(b4, -100)
+    test_bsplines!_empty(b5, 10.0)
 
     function test_bsplines!(basis, basis_exact, T, x, isexact)
         NDERIV = 6
@@ -215,13 +228,13 @@ end
         else
             @test bspl_nderiv ≈ₑₗ bspl_nderiv_exact
         end
-        @test parent(bspl_nderiv) === dest0
+        @test pparent(bspl_nderiv) === dest0
 
         # No derivative
         dest1 = fill(T(Inf), order(basis))
         bspl1 = bsplines!(dest1, basis, x, leftknot=leftknot)
         @test bspl1 == view(bspl_nderiv,:,0)
-        @test parent(bspl1) === dest1
+        @test pparent(bspl1) === dest1
 
         # AllDerivatives(N) and Derivative(N) for N = 1:NDERIV-1
         for N = 1:NDERIV-1
@@ -229,7 +242,7 @@ end
             fill!(dest1, T(Inf))
             bspl1 = bsplines!(dest1, basis, x, Derivative(N), leftknot=leftknot, derivspace=derivspace)
             @test bspl1 == view(bspl_nderiv,:,N)
-            @test parent(bspl1) === dest1
+            @test pparent(bspl1) === dest1
             # AllDerivatives(N)
             dest2 = fill(T(Inf), order(basis), N)
             if N == 1
@@ -237,8 +250,8 @@ end
             else
                 bspl2 = bsplines!(dest2, basis, x, AllDerivatives(N), leftknot=leftknot, derivspace=derivspace)
             end
-            @test bspl2 == OffsetArray(view(parent(bspl_nderiv),:,1:N), offset, -1)
-            @test parent(bspl2) === dest2
+            @test bspl2 == OffsetArray(view(pparent(bspl_nderiv),:,1:N), offset, -1)
+            @test pparent(bspl2) === dest2
         end
     end
 
@@ -318,8 +331,8 @@ end
     bsp1 = bsplines!(dest1, b5, 0)
     bsp2 = bsplines!(dest2, b5, 0, leftknot=leftknot)
     @test bsp1 == bsp2
-    @test parent(bsp1) === dest1
-    @test parent(bsp2) === dest2
+    @test pparent(bsp1) === dest1
+    @test pparent(bsp2) === dest2
     fill!(dest1, NaN)
     fill!(dest2, NaN)
     dest3 = fill(NaN, order(b5))
@@ -329,10 +342,10 @@ end
     bsp3 = bsplines!(dest3, b5, 0, Derivative(1), derivspace=derivspace)
     bsp4 = bsplines!(dest4, b5, 0, Derivative(1), leftknot=leftknot, derivspace=derivspace)
     @test bsp1 == bsp2 == bsp3 == bsp4
-    @test parent(bsp1) === dest1
-    @test parent(bsp2) === dest2
-    @test parent(bsp3) === dest3
-    @test parent(bsp4) === dest4
+    @test pparent(bsp1) === dest1
+    @test pparent(bsp2) === dest2
+    @test pparent(bsp3) === dest3
+    @test pparent(bsp4) === dest4
     dest1 = fill(NaN, order(b5), 3)
     dest2 = fill(NaN, order(b5), 3)
     dest3 = fill(NaN, order(b5), 3)
@@ -342,8 +355,8 @@ end
     bsp3 = bsplines!(dest3, b5, 0, AllDerivatives(3), derivspace=derivspace)
     bsp4 = bsplines!(dest4, b5, 0, AllDerivatives(3), leftknot=leftknot, derivspace=derivspace)
     @test bsp1 == bsp2 == bsp3 == bsp4
-    @test parent(bsp1) === dest1
-    @test parent(bsp2) === dest2
-    @test parent(bsp3) === dest3
-    @test parent(bsp4) === dest4
+    @test pparent(bsp1) === dest1
+    @test pparent(bsp2) === dest2
+    @test pparent(bsp3) === dest3
+    @test pparent(bsp4) === dest4
 end

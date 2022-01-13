@@ -26,15 +26,15 @@ Spline(basis, coeffs) = Spline{typeof(basis),typeof(coeffs)}(basis, coeffs)
 Base.:(==)(x::Spline, y::Spline) = basis(x) == basis(y) && coeffs(x) == coeffs(y)
 
 Base.hash(x::Spline, h::UInt) =
-    hash(coeffs(x), hash(breakpoints(basis(x)), hash(order(x), hash(:Spline, h))))
+    hash(coeffs(x), hash(knots(basis(x)), hash(order(x), hash(:Spline, h))))
 
 function Base.show(io::IO, ::MIME"text/plain", s::Spline)
     cio = IOContext(io, :compact=>true)
     summary(io, s); println(io, ':')
     print(io, " basis: "); summary(io, basis(s)); println(io, ':')
     println(io, "  order: ", order(basis(s)))
-    print(io, "  breakpoints: ")
-    show(cio, breakpoints(basis(s)))
+    print(io, "  knots: ")
+    show(cio, knots(basis(s)))
     if s isa BSpline
         print(io, "\n index: ", coeffs(s).index, " (knots: ")
         show(cio, bsplineknots(s))
@@ -94,8 +94,7 @@ order(s::Spline) = order(basis(s))
 """
     BSpline{B} <: Spline{B}
 
-Type for a B-spline from a B-spline basis of type `B`. `BSpline`s can be obtained by
-indexing into a B-spline basis.
+Type for a B-spline from a B-spline basis of type `B`.
 """
 const BSpline = Spline{B, StandardBasisVector{Bool}} where B<:BSplineBasis
 
@@ -105,18 +104,19 @@ const BSpline = Spline{B, StandardBasisVector{Bool}} where B<:BSplineBasis
 """
     BSpline(basis::BSplineBasis, index)
 
-Return the `index`-th B-spline of `basis`.
+Return the `index`-th B-spline of `basis`. Instead of `BSpline(basis, index)`, the shorthand
+`basis[index]` can be used.
 
 # Example
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 1:10);
+julia> basis = BSplineBasis(5, breakpoints=1:10);
 
-julia> BSpline(basis, 3)
-BSpline{BSplineBasis{UnitRange{Int64}}}:
- basis: 13-element BSplineBasis{UnitRange{Int64}}:
+julia> BSpline(basis, 3) # or: basis[3]
+$(BSpline{BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}}):
+ basis: 13-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
   order: 5
-  breakpoints: 1:10
+  knots: [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10]
  index: 3 (knots: [1, 1, 1, 2, 3, 4])
 ```
 """
@@ -142,7 +142,7 @@ Otherwise, return `support(basis(spline))`.
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(3, 0:5);
+julia> basis = BSplineBasis(3, breakpoints=0:5);
 
 julia> spline = Spline(basis, ones(7));
 
@@ -182,7 +182,7 @@ Instead of calling `splinevalue`, a spline object can be called directly:
 # Examples
 
 ```jldoctest
-julia> spl = Spline(BSplineBasis(4, 0:5), 1:8);
+julia> spl = Spline(BSplineBasis(4, breakpoints=0:5), 1:8);
 
 julia> splinevalue(spl, 1.7)
 3.69775

@@ -42,7 +42,7 @@ include("plotting.jl")
 
 bspline_returntype(basis::BSplineBasis, x::Number) = bspline_returntype(basis, typeof(x))
 bspline_returntype(basis::BSplineBasis, types::Type...) =
-    bspline_returntype(eltype(breakpoints(basis)), types...)
+    bspline_returntype(eltype(knots(basis)), types...)
 
 bspline_returntype(spline::Spline, x::Number) = bspline_returntype(spline, typeof(x))
 bspline_returntype(spline::Spline, xtype::Type) =
@@ -68,13 +68,13 @@ See also: [`interpolate`](@ref)
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(6, 0:0.25:1);
+julia> basis = BSplineBasis(6, breakpoints=0:0.25:1);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
-$(Spline{BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}, Vector{Float64}}):
- basis: 9-element $(BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}):
+$(Spline{BSplineBasis{BSplines.KnotVector{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}}, Vector{Float64}}):
+ basis: 9-element $(BSplineBasis{BSplines.KnotVector{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}}):
   order: 6
-  breakpoints: 0.0:0.25:1.0
+  knots: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
  coeffs: [0.0, 0.05, 0.15, 0.298438, 0.486979, 0.651299, 0.755166, 0.814456, 0.841471]
 
 julia> spl(π/4) ≈ sqrt(1/2)
@@ -100,15 +100,15 @@ See also: [`approximate`](@ref)
 # Examples
 
 ```jldoctest
-julia> basis = BSplineBasis(5, 1:10);
+julia> basis = BSplineBasis(5, breakpoints=1:10);
 
 julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
 
 julia> spl = interpolate(basis, xs, ys)
-$(Spline{BSplineBasis{UnitRange{Int64}}, Vector{Float64}}):
- basis: 13-element BSplineBasis{UnitRange{Int64}}:
+$(Spline{BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}, Vector{Float64}}):
+ basis: 13-element $(BSplineBasis{BSplines.KnotVector{Int64, UnitRange{Int64}}}):
   order: 5
-  breakpoints: 1:10
+  knots: [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10]
  coeffs: [0.0, 0.248019, 0.596872, 0.946671, 1.26894, 1.51405, 1.71149, 1.87666, 2.01856, 2.14292, 2.22592, 2.27758, 2.30259]
 
 julia> spl(float(ℯ))
@@ -151,7 +151,9 @@ See also: [`knotaverages!`](@ref)
 # Examples
 
 ```jldoctest
-julia> knotaverages(BSplineBasis(3, 0:5))
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
+julia> knotaverages(basis)
 7-element $(Vector{Float64}):
  0.0
  0.5
@@ -161,7 +163,9 @@ julia> knotaverages(BSplineBasis(3, 0:5))
  4.5
  5.0
 
-julia> knotaverages(BSplineBasis(4, [1, 3//2, 5//2, 4]), indices=2:6)
+julia> basis = BSplineBasis(4, breakpoints=[1, 3//2, 5//2, 4]);
+
+julia> knotaverages(basis, indices=2:6)
 5-element $(Vector{Rational{Int64}}):
  7//6
  5//3
@@ -194,9 +198,11 @@ See also: [`knotaverages`](@ref)
 # Examples
 
 ```jldoctest
+julia> basis = BSplineBasis(3, breakpoints=0:5);
+
 julia> dest = Vector{Float64}(undef, 7);
 
-julia> knotaverages!(dest, BSplineBasis(3, 0:5))
+julia> knotaverages!(dest, basis)
 7-element $(Vector{Float64}):
  0.0
  0.5
@@ -208,7 +214,7 @@ julia> knotaverages!(dest, BSplineBasis(3, 0:5))
 
 julia> dest = Vector{Rational{Int}}(undef, 5);
 
-julia> knotaverages!(dest, BSplineBasis(3, 0:5), indices=2:6)
+julia> knotaverages!(dest, basis, indices=2:6)
 5-element $(Vector{Rational{Int64}}):
  1//2
  3//2
@@ -264,16 +270,16 @@ optimum” and are computationally inexpensive.
 
 ```jldoctest
 julia> averagebasis(5, 0:10)
-11-element $(BSplineBasis{Vector{Float64}}):
+11-element $(BSplineBasis{BSplines.KnotVector{Float64, Vector{Float64}}}):
  order: 5
- breakpoints: [0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0]
+ knots: [0.0, 0.0, 0.0, 0.0, 0.0, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 10.0, 10.0, 10.0, 10.0, 10.0]
 ```
 """
 function averagebasis(order::Integer, datapoints::AbstractVector{<:Real})
     if order > length(datapoints)
         throw(ArgumentError("order cannot not be greater than number of datapoints."))
     end
-    BSplineBasis(order, averagebasis_breakpoints(order, datapoints))
+    BSplineBasis(order, breakpoints=averagebasis_breakpoints(order, datapoints))
 end
 
 function averagebasis_breakpoints(k, datapoints)
@@ -286,5 +292,7 @@ function averagebasis_breakpoints(k, datapoints)
     end
     bps
 end
+
+include("deprecated.jl")
 
 end # module BSplines

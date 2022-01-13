@@ -27,7 +27,7 @@ A `BSplineBasis` is constructed from its order and breakpoint vector.
 The [`order`](@ref) and [`breakpoints`](@ref) functions return these properties.
 The `length` function returns the number of B-splines in the basis:
 ```@repl basis
-basis = BSplineBasis(4, 0:5)
+basis = BSplineBasis(4, breakpoints=0:5)
 order(basis)
 breakpoints(basis)
 length(basis)
@@ -61,7 +61,7 @@ which contains the value of the `i`-th B-spline at the index `i`.
 The array always has the length `order(basis)`:
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 bsplines(basis, 3.2)
 bsplines(basis, 7//3)
 ```
@@ -80,7 +80,7 @@ The `N`-th derivative is specified via an optional third argument of the singlet
 Instead of `Derivative{N}()`, the shorter constructor `Derivative(N)` can be used:
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 bsplines(basis, 7//3, Derivative(1)) # calculate first derivatives of non-zero B-splines
 ```
 
@@ -98,7 +98,7 @@ The `bsplines` function allocates a new array to return the values (except when 
 In order to use a pre-allocated array instead, the [`bsplines!`](@ref) function can be used: `bsplines!(dest, args...)` behaves like `bsplines(args...)`, but the calculations are done in `dest` and the returned `OffsetArray` is a wrapper around `dest`.
 
 ```@repl basis
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 destvec = zeros(4);
 bsplines!(destvec, basis, 3.2)
 parent(ans) === destvec
@@ -127,7 +127,7 @@ The `bsplines` and `bsplines!` functions accept two optional keyword arguments (
 
 ```@repl basis
 using BenchmarkTools
-basis = BSplineBasis(4, 0:5);
+basis = BSplineBasis(4, breakpoints=0:5);
 dest = zeros(order(basis));
 space = zeros(order(basis), order(basis));
 left = intervalindex(basis, 2.5);
@@ -146,7 +146,7 @@ However, in many situations it may be desirable to
 In order to have repeated interior knots, it is sufficient to include it in the breakpoint vector multiple times when constructing the basis:
 
 ```@repl basis
-basis = BSplineBasis(3, [1, 2, 3, 4, 5, 5, 6, 7, 8]) # 5 appears twice
+basis = BSplineBasis(3, breakpoints=[1, 2, 3, 4, 5, 5, 6, 7, 8]) # 5 appears twice
 knots(basis)
 ```
 
