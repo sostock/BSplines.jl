@@ -71,8 +71,8 @@ See also: [`interpolate`](@ref)
 julia> basis = BSplineBasis(6, 0:0.25:1);
 
 julia> spl = approximate(sin, basis, indices=2:length(basis))
-$(Spline{BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}, Vector{Float64}}):
- basis: 9-element $(BSplineBasis{StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}}}):
+$(Spline{BSplineBasis{typeof(0:0.25:1)}, Vector{Float64}}):
+ basis: 9-element $(BSplineBasis{typeof(0:0.25:1)}):
   order: 6
   breakpoints: 0.0:0.25:1.0
  coeffs: [0.0, 0.05, 0.15, 0.298438, 0.486979, 0.651299, 0.755166, 0.814456, 0.841471]
