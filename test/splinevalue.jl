@@ -1,4 +1,4 @@
-@time @testset "splinevalue" begin
+@testset "splinevalue" begin
 
     # b1 = BSplineBasis(1, 0:5)
     s1 = Spline(b1, 1.0:5.0)

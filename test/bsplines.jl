@@ -22,7 +22,7 @@ maybebig(x::Integer) = Int64(x)
 maybebig(x::Rational) = Rational{Int64}(x)
 maybebig(x::AbstractFloat) = big(x)
 
-@time @testset "bsplines" begin
+@testset "bsplines" begin
     @testset "Return types" begin
         # b1 = BSplineBasis(1, 0:5)
         b1_types = [(Int,Float64), (Float64,Float64), (Float32,Float32),
@@ -176,7 +176,7 @@ maybebig(x::AbstractFloat) = big(x)
                                                 bsplines(b5, 0, AllDerivatives(3), leftknot=leftknot, derivspace=derivspace)
 end
 
-@time @testset "bsplines!" begin
+@testset "bsplines!" begin
     function test_bsplines!_nothing(basis, x)
         dest     = Array{Float64}(undef, order(basis))
         dest_all = Array{Float32}(undef, order(basis), 2)
