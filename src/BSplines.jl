@@ -99,7 +99,7 @@ See also: [`approximate`](@ref)
 
 # Examples
 
-```jldoctest
+```jldoctest; filter = r"6059\\d*"
 julia> basis = BSplineBasis(5, 1:10);
 
 julia> xs = range(1, stop=10, length=length(basis)); ys = log.(xs);
