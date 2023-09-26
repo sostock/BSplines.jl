@@ -6,6 +6,7 @@ DocMeta.setdocmeta!(BSplines, :DocTestSetup, :(using BSplines))
 makedocs(
          sitename = "BSplines.jl",
          format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
+         warnonly = [:missing_docs],
          modules = [BSplines],
          pages = [
                   "Home" => "index.md"
