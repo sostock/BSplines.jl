@@ -152,22 +152,10 @@ See also: [`knotaverages!`](@ref)
 
 ```jldoctest
 julia> knotaverages(BSplineBasis(3, 0:5))
-7-element $(Vector{Float64}):
- 0.0
- 0.5
- 1.5
- 2.5
- 3.5
- 4.5
- 5.0
+$(repr(MIME"text/plain"(), [0.0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.0]))
 
 julia> knotaverages(BSplineBasis(4, [1, 3//2, 5//2, 4]), indices=2:6)
-5-element $(Vector{Rational{Int64}}):
- 7//6
- 5//3
- 8//3
- 7//2
- 4//1
+$(repr(MIME"text/plain"(), [7//6, 5//3, 8//3, 7//2, 4//1]))
 ```
 """
 function knotaverages(basis::BSplineBasis; indices=Colon())
